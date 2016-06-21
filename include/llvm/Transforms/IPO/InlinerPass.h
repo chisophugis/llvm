@@ -17,6 +17,7 @@
 #ifndef LLVM_TRANSFORMS_IPO_INLINERPASS_H
 #define LLVM_TRANSFORMS_IPO_INLINERPASS_H
 
+#include "llvm/Analysis/CGSCCPassManager.h"
 #include "llvm/Analysis/CallGraphSCCPass.h"
 #include "llvm/Analysis/InlineCost.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
@@ -79,6 +80,12 @@ protected:
   AssumptionCacheTracker *ACT;
   ProfileSummaryInfo *PSI;
   ImportedFunctionsInliningStatistics ImportedFunctionsStats;
+};
+
+struct InlinerPass : public PassInfoMixin<InlinerPass> {
+  int DefaultThreshold = llvm::getDefaultInlineThreshold();
+  bool InsertLifetime = true;
+  PreservedAnalyses run(CallGraphSCC &C, AnalysisManager &AM);
 };
 
 } // End llvm namespace
