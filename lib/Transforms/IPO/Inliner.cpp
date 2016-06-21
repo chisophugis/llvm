@@ -703,3 +703,41 @@ bool Inliner::removeDeadFunctions(CallGraph &CG, bool AlwaysInlineOnly) {
   }
   return true;
 }
+
+PreservedAnalyses InlinerPass::run(CallGraphSCC &C, CGSCCAnalysisManager &AM) {
+  FunctionAnalysisManager &FAM =
+      AM.getResult<FunctionAnalysisManagerCGSCCProxy>(C).getManager();
+  const ModuleAnalysisManager &MAM =
+      AM.getResult<ModuleAnalysisManagerCGSCCProxy>(C).getManager();
+
+  // XXX: do this to make sure we get the real call graph used by the
+  // ModuleToPostOrderCGSCCPassAdaptor. Can we do something more "correct"
+  // here?
+  CallGraph &CG = C.getCallGraph();
+
+  auto *PSI = MAM.getCachedResult<ProfileSummaryAnalysis>(CG.getModule());
+  auto *TLI = MAM.getCachedResult<TargetLibraryAnalysis>(CG.getModule());
+  if (!PSI)
+    report_fatal_error("ProfileSummaryAnalysis not cached at a higher level!");
+  if (!TLI)
+    report_fatal_error("TargetLbraryAnalysis not computed at a higher level!");
+  auto AARGetter = [&](Function &F) -> AAResults & {
+    return FAM.getResult<AAManager>(F);
+  };
+  std::function<AssumptionCache &(Function &)> GetAssumptionCache = [&](
+      Function &F) -> AssumptionCache & {
+    return FAM.getResult<AssumptionAnalysis>(F);
+  };
+  auto GetInlineCost = [&](CallSite CS) -> InlineCost {
+    // XXX: Copied from SimpleInliner::getInlineCost
+    Function *Callee = CS.getCalledFunction();
+    TargetTransformInfo &TTI = FAM.getResult<TargetIRAnalysis>(*Callee);
+    return llvm::getInlineCost(CS, DefaultThreshold, TTI, GetAssumptionCache,
+                               PSI);
+  };
+  bool Changed = inlineCallsImpl(C, CG, GetAssumptionCache, PSI, *TLI,
+                                 InsertLifetime, GetInlineCost, AARGetter);
+  if (Changed)
+    return PreservedAnalyses::none();
+  return PreservedAnalyses::all();
+}
