@@ -1034,59 +1034,6 @@ static bool addNoRecurseAttrs(const SCCNodeSet &SCCNodes) {
   return setDoesNotRecurse(*F);
 }
 
-PreservedAnalyses PostOrderFunctionAttrsPass::run(LazyCallGraph::SCC &C,
-                                                  AnalysisManager &AM) {
-  // We pass a lambda into functions to wire them up to the analysis manager
-  // for getting function analyses.
-  auto AARGetter = [&](Function &F) -> AAResults & {
-    return AM.getResult<AAManager>(F);
-  };
-
-  // Fill SCCNodes with the elements of the SCC. Also track whether there are
-  // any external or opt-none nodes that will prevent us from optimizing any
-  // part of the SCC.
-  SCCNodeSet SCCNodes;
-  bool HasUnknownCall = false;
-  for (LazyCallGraph::Node &N : C) {
-    Function &F = N.getFunction();
-    if (F.hasFnAttribute(Attribute::OptimizeNone)) {
-      // Treat any function we're trying not to optimize as if it were an
-      // indirect call and omit it from the node set used below.
-      HasUnknownCall = true;
-      continue;
-    }
-    // Track whether any functions in this SCC have an unknown call edge.
-    // Note: if this is ever a performance hit, we can common it with
-    // subsequent routines which also do scans over the instructions of the
-    // function.
-    if (!HasUnknownCall)
-      for (Instruction &I : instructions(F))
-        if (auto CS = CallSite(&I))
-          if (!CS.getCalledFunction()) {
-            HasUnknownCall = true;
-            break;
-          }
-
-    SCCNodes.insert(&F);
-  }
-
-  bool Changed = false;
-  Changed |= addArgumentReturnedAttrs(SCCNodes);
-  Changed |= addReadAttrs(SCCNodes, AARGetter);
-  Changed |= addArgumentAttrs(SCCNodes);
-
-  // If we have no external nodes participating in the SCC, we can deduce some
-  // more precise attributes as well.
-  if (!HasUnknownCall) {
-    Changed |= addNoAliasAttrs(SCCNodes);
-    Changed |= addNonNullAttrs(SCCNodes);
-    Changed |= removeConvergentAttrs(SCCNodes);
-    Changed |= addNoRecurseAttrs(SCCNodes);
-  }
-
-  return Changed ? PreservedAnalyses::none() : PreservedAnalyses::all();
-}
-
 namespace {
 struct PostOrderFunctionAttrsLegacyPass : public CallGraphSCCPass {
   static char ID; // Pass identification, replacement for typeid
@@ -1127,7 +1074,10 @@ static bool runImpl(CallGraphSCC &SCC, AARGetterT AARGetter) {
   bool ExternalNode = false;
   for (CallGraphNode *I : SCC) {
     Function *F = I->getFunction();
-    if (!F || F->hasFnAttribute(Attribute::OptimizeNone)) {
+    // XXX: The isDeclaration check here is because in the new PM BasicAA
+    // uses DomTree which will cause it to crash on declarations.
+    if (!F || F->isDeclaration() ||
+        F->hasFnAttribute(Attribute::OptimizeNone)) {
       // External node or function we're trying not to optimize - we both avoid
       // transform them and avoid leveraging information they provide.
       ExternalNode = true;
@@ -1170,6 +1120,19 @@ bool PostOrderFunctionAttrsLegacyPass::runOnSCC(CallGraphSCC &SCC) {
 
   return runImpl(SCC, AARGetter);
 }
+
+PreservedAnalyses PostOrderFunctionAttrsPass::run(CallGraphSCC &C,
+                                                  AnalysisManager &AM) {
+  // We pass a lambda into functions to wire them up to the analysis manager
+  // for getting function analyses.
+  auto AARGetter = [&](Function &F) -> AAResults & {
+    return AM.getResult<AAManager>(F);
+  };
+
+  return runImpl(C, AARGetter) ? PreservedAnalyses::none()
+                               : PreservedAnalyses::all();
+}
+
 
 namespace {
 struct ReversePostOrderFunctionAttrsLegacyPass : public ModulePass {

@@ -154,8 +154,7 @@ public:
 
 /// \brief No-op CGSCC pass which does nothing.
 struct NoOpCGSCCPass {
-  PreservedAnalyses run(LazyCallGraph::SCC &C,
-                        AnalysisManager &) {
+  PreservedAnalyses run(CallGraphSCC &C, AnalysisManager &) {
     return PreservedAnalyses::all();
   }
   static StringRef name() { return "NoOpCGSCCPass"; }
@@ -168,7 +167,7 @@ class NoOpCGSCCAnalysis : public AnalysisInfoMixin<NoOpCGSCCAnalysis> {
 
 public:
   struct Result {};
-  Result run(LazyCallGraph::SCC &, AnalysisManager &) {
+  Result run(CallGraphSCC &, AnalysisManager &) {
     return Result();
   }
   static StringRef name() { return "NoOpCGSCCAnalysis"; }
@@ -227,7 +226,7 @@ void PassBuilder::registerModuleAnalyses(AnalysisManager &AM) {
 
 void PassBuilder::registerCGSCCAnalyses(AnalysisManager &AM) {
 #define CGSCC_ANALYSIS(NAME, CREATE_PASS)                                      \
-  AM.registerPass<LazyCallGraph::SCC>([&] { return CREATE_PASS; });
+  AM.registerPass<CallGraphSCC>([&] { return CREATE_PASS; });
 #include "PassRegistry.def"
 }
 

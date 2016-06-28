@@ -21,18 +21,22 @@
 #ifndef LLVM_ANALYSIS_CGSCCPASSMANAGER_H
 #define LLVM_ANALYSIS_CGSCCPASSMANAGER_H
 
-#include "llvm/Analysis/LazyCallGraph.h"
+#include "llvm/ADT/SCCIterator.h"
+#include "llvm/Analysis/CallGraph.h"
+#include "llvm/Analysis/CallGraphSCCPass.h"
 #include "llvm/IR/PassManager.h"
 
 namespace llvm {
 
-extern template class PassManager<LazyCallGraph::SCC>;
+extern template class PassManager<CallGraphSCC>;
 /// \brief The CGSCC pass manager.
 ///
 /// See the documentation for the PassManager template for details. It runs
 /// a sequency of SCC passes over each SCC that the manager is run over. This
 /// typedef serves as a convenient way to refer to this construct.
-typedef PassManager<LazyCallGraph::SCC> CGSCCPassManager;
+typedef PassManager<CallGraphSCC> CGSCCPassManager;
+
+extern cl::opt<unsigned> MaxCGSCCIterations;
 
 /// \brief The core module pass which does a post-order walk of the SCCs and
 /// runs a CGSCC pass over each one.
@@ -66,33 +70,51 @@ public:
 
   /// \brief Runs the CGSCC pass across every SCC in the module.
   PreservedAnalyses run(Module &M, AnalysisManager &AM) {
-    // Get the call graph for this module.
-    LazyCallGraph &CG = AM.getResult<LazyCallGraphAnalysis>(M);
+    CallGraph &CG = AM.getResult<CallGraphAnalysis>(M);
+
+    // XXX: no existing CGSCC passes use this.
+    //bool Changed = doInitialization(CG);
+
+    // Walk the callgraph in bottom-up SCC order.
+    scc_iterator<CallGraph*> CGI = scc_begin(&CG);
 
     PreservedAnalyses PA = PreservedAnalyses::all();
-    for (LazyCallGraph::RefSCC &RC : CG.postorder_ref_sccs()) {
-      if (DebugLogging)
-        dbgs() << "Running an SCC pass across the RefSCC: " << RC << "\n";
+    std::vector<std::unique_ptr<CallGraphSCC>> SCCs;
+    while (!CGI.isAtEnd()) {
+      const std::vector<CallGraphNode *> &NodeVec = *CGI;
+      SCCs.emplace_back(llvm::make_unique<CallGraphSCC>(CG, &CGI, NodeVec));
+      // Copy the current SCC and increment past it so that the pass can hack
+      // on the SCC if it wants to without invalidating our iterator.
+      ++CGI;
+      CallGraphSCC &CurSCC = *SCCs.back();
+      for (int i = 0; i < (int)MaxCGSCCIterations; i++) {
 
-      for (LazyCallGraph::SCC &C : RC) {
-        PreservedAnalyses PassPA = Pass.run(C, AM);
+        PreservedAnalyses PassPA = Pass.run(CurSCC, AM);
 
-        // We know that the CGSCC pass couldn't have invalidated any other
-        // SCC's analyses (that's the contract of a CGSCC pass), so
-        // directly handle the CGSCC analysis manager's invalidation here. We
-        // also update the preserved set of analyses to reflect that invalidated
-        // analyses are now safe to preserve.
-        // FIXME: This isn't quite correct. We need to handle the case where the
-        // pass updated the CG, particularly some child of the current SCC, and
-        // invalidate its analyses.
-        PassPA = AM.invalidate(C, std::move(PassPA));
+        PassPA = AM.invalidate(CurSCC, std::move(PassPA));
 
-        // Then intersect the preserved set so that invalidation of module
-        // analyses will eventually occur when the module pass completes.
         PA.intersect(std::move(PassPA));
+
+        if (CurSCC.DevirtualizedCall) {
+          DEBUG_WITH_TYPE("new-cgscc-pm", {
+            dbgs() << "Devirtualized call " << i << "\n";
+            CurSCC.print(dbgs());
+            dbgs() << "\n";
+          });
+
+          // Reset this flag and keep looping.
+          CurSCC.DevirtualizedCall = false;
+          continue;
+        }
+        break;
       }
     }
 
+    // XXX: The only use of this for CGSCC passes is in the inliner which
+    // just calls removeDeadFunctions. What to do about this?
+    // Should we just do a run of globaldce after the CGSCC visitation is
+    // done?
+    //Changed |= doFinalization(CG);
     return PA;
   }
 
@@ -137,25 +159,35 @@ public:
   }
 
   /// \brief Runs the function pass across every function in the module.
-  PreservedAnalyses run(LazyCallGraph::SCC &C, AnalysisManager &AM) {
-    if (DebugLogging)
-      dbgs() << "Running function passes across an SCC: " << C << "\n";
+  PreservedAnalyses run(CallGraphSCC &C, AnalysisManager &AM) {
+    // XXX: enable after adding ostream operator for CallGraphSCC.
+    //if (DebugLogging)
+    //  dbgs() << "Running function passes across an SCC: " << C << "\n";
 
     PreservedAnalyses PA = PreservedAnalyses::all();
-    for (LazyCallGraph::Node &N : C) {
-      PreservedAnalyses PassPA = Pass.run(N.getFunction(), AM);
+    for (CallGraphNode *N : C) {
+      Function *F = N->getFunction();
+      // XXX: CallGraphSCC may have a null function (for the special "calls
+      // external" and "called by external") nodes.
+      // Also, there may be declarations.
+      if (!F || F->isDeclaration())
+        continue;
+      PreservedAnalyses PassPA = Pass.run(*F, AM);
 
       // We know that the function pass couldn't have invalidated any other
       // function's analyses (that's the contract of a function pass), so
       // directly handle the function analysis manager's invalidation here.
       // Also, update the preserved analyses to reflect that once invalidated
       // these can again be preserved.
-      PassPA = AM.invalidate(N.getFunction(), std::move(PassPA));
+      PassPA = AM.invalidate(*F, std::move(PassPA));
 
       // Then intersect the preserved set so that invalidation of module
       // analyses will eventually occur when the module pass completes.
       PA.intersect(std::move(PassPA));
     }
+
+    C.DevirtualizedCall = RefreshCallGraph(C, C.getCallGraph(), false);
+    PA.preserve<CallGraphAnalysis>();
 
     // FIXME: We need to update the call graph here to account for any deleted
     // edges!
@@ -167,9 +199,7 @@ private:
   bool DebugLogging;
 };
 
-static inline IRUnitKind getIRUnitKindID(LazyCallGraph::SCC *) {
-  return IRK_CGSCC;
-}
+static inline IRUnitKind getIRUnitKindID(CallGraphSCC *) { return IRK_CGSCC; }
 
 /// \brief A function to deduce a function pass type and wrap it in the
 /// templated adaptor.
