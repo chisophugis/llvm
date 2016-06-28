@@ -87,12 +87,21 @@ protected:
 
 /// CallGraphSCC - This is a single SCC that a CallGraphSCCPass is run on.
 class CallGraphSCC {
-  const CallGraph &CG; // The call graph for this SCC.
+  CallGraph &CG; // The call graph for this SCC.
   void *Context; // The CGPassManager object that is vending this.
   std::vector<CallGraphNode*> Nodes;
-
 public:
+
+  // XXX: hack for CGSCC pass manager to pass stuff back up to the
+  // ModuleToPostOrderCGSCCPassAdaptor's main visitation loop.
+  // Also, this should really be called "revisit this SCC".
+  bool DevirtualizedCall = false;
+
   CallGraphSCC(CallGraph &cg, void *context) : CG(cg), Context(context) {}
+
+  // The vector is copied.
+  CallGraphSCC(CallGraph &cg, void *context, std::vector<CallGraphNode *> nodes)
+      : CG(cg), Context(context), Nodes(nodes) {}
 
   void initialize(CallGraphNode *const *I, CallGraphNode *const *E) {
     Nodes.assign(I, E);
@@ -109,8 +118,40 @@ public:
   iterator begin() const { return Nodes.begin(); }
   iterator end() const { return Nodes.end(); }
 
-  const CallGraph &getCallGraph() { return CG; }
+  CallGraph &getCallGraph() { return CG; }
+  StringRef getName() {
+    if (!Nodes.empty())
+      if (CallGraphNode *Node = Nodes.front())
+        if (Function *F = Node->getFunction())
+          return F->getName();
+    return "Null SCC";
+  }
+  void print(raw_ostream &OS) {
+    if (Nodes.empty() || !Nodes.front() || !Nodes.front()->getFunction()) {
+      OS << "Null SCC";
+      return;
+    }
+    for (CallGraphNode *Node : Nodes) {
+      if (!Node || !Node->getFunction()) {
+        OS << "null ";
+        continue;
+      }
+      OS << Node->getFunction()->getName() << " ";
+    }
+  }
 };
+
+/// Scan the functions in the specified CFG and resync the
+/// callgraph with the call sites found in it.  This is used after
+/// FunctionPasses have potentially munged the callgraph, and can be used after
+/// CallGraphSCC passes to verify that they correctly updated the callgraph.
+///
+/// This function returns true if it devirtualized an existing function call,
+/// meaning it turned an indirect call into a direct call.  This happens when
+/// a function pass like GVN optimizes away stuff feeding the indirect call.
+/// This never happens in checking mode.
+///
+bool RefreshCallGraph(CallGraphSCC &CurSCC, CallGraph &CG, bool IsCheckingMode);
 
 void initializeDummyCGSCCPassPass(PassRegistry &);
 

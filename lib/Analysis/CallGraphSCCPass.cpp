@@ -32,8 +32,10 @@ using namespace llvm;
 
 #define DEBUG_TYPE "cgscc-passmgr"
 
-static cl::opt<unsigned> 
-MaxIterations("max-cg-scc-iterations", cl::ReallyHidden, cl::init(4));
+namespace llvm {
+cl::opt<unsigned> MaxCGSCCIterations("max-cg-scc-iterations", cl::ReallyHidden,
+                                     cl::init(4));
+}
 
 STATISTIC(MaxSCCIterations, "Maximum CGSCCPassMgr iterations on one SCC");
 
@@ -100,8 +102,6 @@ private:
   bool RunPassOnSCC(Pass *P, CallGraphSCC &CurSCC,
                     CallGraph &CG, bool &CallGraphUpToDate,
                     bool &DevirtualizedCall);
-  bool RefreshCallGraph(CallGraphSCC &CurSCC, CallGraph &CG,
-                        bool IsCheckingMode);
 };
 
 } // end anonymous namespace.
@@ -164,19 +164,8 @@ bool CGPassManager::RunPassOnSCC(Pass *P, CallGraphSCC &CurSCC,
   return Changed;
 }
 
-
-/// Scan the functions in the specified CFG and resync the
-/// callgraph with the call sites found in it.  This is used after
-/// FunctionPasses have potentially munged the callgraph, and can be used after
-/// CallGraphSCC passes to verify that they correctly updated the callgraph.
-///
-/// This function returns true if it devirtualized an existing function call,
-/// meaning it turned an indirect call into a direct call.  This happens when
-/// a function pass like GVN optimizes away stuff feeding the indirect call.
-/// This never happens in checking mode.
-///
-bool CGPassManager::RefreshCallGraph(CallGraphSCC &CurSCC,
-                                     CallGraph &CG, bool CheckingMode) {
+bool llvm::RefreshCallGraph(CallGraphSCC &CurSCC, CallGraph &CG,
+                            bool CheckingMode) {
   DenseMap<Value*, CallGraphNode*> CallSites;
   
   DEBUG(dbgs() << "CGSCCPASSMGR: Refreshing SCC with " << CurSCC.size()
@@ -473,7 +462,7 @@ bool CGPassManager::runOnModule(Module &M) {
                      << Iteration << '\n');
       DevirtualizedCall = false;
       Changed |= RunAllPassesOnSCC(CurSCC, CG, DevirtualizedCall);
-    } while (Iteration++ < MaxIterations && DevirtualizedCall);
+    } while (Iteration++ < MaxCGSCCIterations && DevirtualizedCall);
     
     if (DevirtualizedCall)
       DEBUG(dbgs() << "  CGSCCPASSMGR: Stopped iteration after " << Iteration

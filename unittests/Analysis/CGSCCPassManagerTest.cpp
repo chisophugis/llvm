@@ -59,7 +59,7 @@ public:
 
   TestSCCAnalysis(int &Runs) : Runs(Runs) {}
 
-  Result run(LazyCallGraph::SCC &C, CGSCCAnalysisManager &AM) {
+  Result run(CallGraphSCC &C, CGSCCAnalysisManager &AM) {
     ++Runs;
     return Result(C.size());
   }
@@ -149,7 +149,7 @@ struct TestSCCPass {
         AnalyzedModuleFunctionCount(AnalyzedModuleFunctionCount),
         OnlyUseCachedResults(OnlyUseCachedResults) {}
 
-  PreservedAnalyses run(LazyCallGraph::SCC &C, CGSCCAnalysisManager &AM) {
+  PreservedAnalyses run(CallGraphSCC &C, CGSCCAnalysisManager &AM) {
     ++RunCount;
 
     const ModuleAnalysisManager &MAM =
@@ -158,28 +158,35 @@ struct TestSCCPass {
         AM.getResult<FunctionAnalysisManagerCGSCCProxy>(C).getManager();
     if (TestModuleAnalysis::Result *TMA =
             MAM.getCachedResult<TestModuleAnalysis>(
-                *C.begin()->getFunction().getParent()))
+                C.getCallGraph().getModule()))
       AnalyzedModuleFunctionCount += TMA->FunctionCount;
 
     if (OnlyUseCachedResults) {
       // Hack to force the use of the cached interface.
       if (TestSCCAnalysis::Result *AR = AM.getCachedResult<TestSCCAnalysis>(C))
         AnalyzedSCCFunctionCount += AR->FunctionCount;
-      for (LazyCallGraph::Node &N : C)
+      for (CallGraphNode *N : C) {
+        // XXX: The old PM can call on SCC's with null nodes.
+        if (!N->getFunction())
+          continue;
         if (TestFunctionAnalysis::Result *FAR =
-                FAM.getCachedResult<TestFunctionAnalysis>(N.getFunction()))
+                FAM.getCachedResult<TestFunctionAnalysis>(*N->getFunction()))
           AnalyzedInstrCount += FAR->InstructionCount;
+      }
     } else {
       // Typical path just runs the analysis as needed.
       TestSCCAnalysis::Result &AR = AM.getResult<TestSCCAnalysis>(C);
       AnalyzedSCCFunctionCount += AR.FunctionCount;
-      for (LazyCallGraph::Node &N : C) {
+      for (CallGraphNode *N : C) {
+        // XXX: The old PM can call on SCC's with null nodes.
+        if (!N->getFunction())
+          continue;
         TestFunctionAnalysis::Result &FAR =
-            FAM.getResult<TestFunctionAnalysis>(N.getFunction());
+            FAM.getResult<TestFunctionAnalysis>(*N->getFunction());
         AnalyzedInstrCount += FAR.InstructionCount;
 
         // Just ensure we get the immutable results.
-        (void)FAM.getResult<TestImmutableFunctionAnalysis>(N.getFunction());
+        (void)FAM.getResult<TestImmutableFunctionAnalysis>(*N->getFunction());
       }
     }
 
@@ -264,7 +271,7 @@ TEST(CGSCCPassManagerTest, Basic) {
 
   ModuleAnalysisManager MAM(/*DebugLogging*/ true);
   int ModuleAnalysisRuns = 0;
-  MAM.registerPass([&] { return LazyCallGraphAnalysis(); });
+  MAM.registerPass([&] { return CallGraphAnalysis(); });
   MAM.registerPass([&] { return TestModuleAnalysis(ModuleAnalysisRuns); });
 
   MAM.registerPass([&] { return FunctionAnalysisManagerModuleProxy(FAM); });
@@ -297,15 +304,18 @@ TEST(CGSCCPassManagerTest, Basic) {
 
   EXPECT_EQ(1, ModulePassRunCount1);
 
+  // XXX: Some of these are 1 larger with CallGraphSCC than with
+  // LazyCallGraph because CallGraph has an explicit "external caller" SCC.
+
   EXPECT_EQ(1, ModuleAnalysisRuns);
-  EXPECT_EQ(4, SCCAnalysisRuns);
+  EXPECT_EQ(5, SCCAnalysisRuns);
   EXPECT_EQ(6, FunctionAnalysisRuns);
   EXPECT_EQ(6, ImmutableFunctionAnalysisRuns);
 
-  EXPECT_EQ(4, SCCPassRunCount1);
+  EXPECT_EQ(5, SCCPassRunCount1);
   EXPECT_EQ(14, AnalyzedInstrCount1);
-  EXPECT_EQ(6, AnalyzedSCCFunctionCount1);
-  EXPECT_EQ(4 * 6, AnalyzedModuleFunctionCount1);
+  EXPECT_EQ(7, AnalyzedSCCFunctionCount1);
+  EXPECT_EQ(5 * 6, AnalyzedModuleFunctionCount1);
 }
 
 }

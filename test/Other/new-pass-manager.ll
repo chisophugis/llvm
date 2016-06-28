@@ -18,15 +18,23 @@
 ; RUN: opt -disable-output -disable-verify -debug-pass-manager \
 ; RUN:     -passes='cgscc(no-op-cgscc)' %s 2>&1 \
 ; RUN:     | FileCheck %s --check-prefix=CHECK-CGSCC-PASS
-; CHECK-CGSCC-PASS: Starting llvm::Module pass manager run
+; CHECK-CGSCC-PASS:      Starting llvm::Module pass manager run.
 ; CHECK-CGSCC-PASS-NEXT: Running pass: ModuleToPostOrderCGSCCPassAdaptor
 ; CHECK-CGSCC-PASS-NEXT: Running analysis: InnerAnalysisManagerProxy<{{.*}}>
-; CHECK-CGSCC-PASS-NEXT: Running analysis: LazyCallGraphAnalysis
-; CHECK-CGSCC-PASS-NEXT: Running an SCC pass across the RefSCC: [(foo)]
-; CHECK-CGSCC-PASS-NEXT: Starting llvm::LazyCallGraph::SCC pass manager run
-; CHECK-CGSCC-PASS-NEXT: Running pass: NoOpCGSCCPass
-; CHECK-CGSCC-PASS-NEXT: Finished llvm::LazyCallGraph::SCC pass manager run
-; CHECK-CGSCC-PASS-NEXT: Finished llvm::Module pass manager run
+; CHECK-CGSCC-PASS-NEXT: Running analysis: CallGraphAnalysis
+; CHECK-CGSCC-PASS-NEXT: Starting llvm::CallGraphSCC pass manager run.
+; CHECK-CGSCC-PASS-NEXT: Running pass: NoOpCGSCCPass on
+; CHECK-CGSCC-PASS-NEXT: Finished llvm::CallGraphSCC pass manager run.
+; CHECK-CGSCC-PASS-NEXT: Starting llvm::CallGraphSCC pass manager run.
+; CHECK-CGSCC-PASS-NEXT: Running pass: NoOpCGSCCPass on
+; CHECK-CGSCC-PASS-NEXT: Finished llvm::CallGraphSCC pass manager run.
+; CHECK-CGSCC-PASS-NEXT: Starting llvm::CallGraphSCC pass manager run.
+; CHECK-CGSCC-PASS-NEXT: Running pass: NoOpCGSCCPass on
+; CHECK-CGSCC-PASS-NEXT: Finished llvm::CallGraphSCC pass manager run.
+; CHECK-CGSCC-PASS-NEXT: Starting llvm::CallGraphSCC pass manager run.
+; CHECK-CGSCC-PASS-NEXT: Running pass: NoOpCGSCCPass on
+; CHECK-CGSCC-PASS-NEXT: Finished llvm::CallGraphSCC pass manager run.
+; CHECK-CGSCC-PASS-NEXT: Finished llvm::Module pass manager run.
 
 ; RUN: opt -disable-output -disable-verify -debug-pass-manager \
 ; RUN:     -passes=no-op-function %s 2>&1 \
@@ -129,7 +137,7 @@
 ; CHECK-ANALYSES: Starting llvm::Module pass manager run
 ; CHECK-ANALYSES: Running pass: RequireAnalysisPass
 ; CHECK-ANALYSES: Running analysis: NoOpModuleAnalysis
-; CHECK-ANALYSES: Starting llvm::LazyCallGraph::SCC pass manager run
+; CHECK-ANALYSES: Starting llvm::CallGraphSCC pass manager run
 ; CHECK-ANALYSES: Running pass: RequireAnalysisPass
 ; CHECK-ANALYSES: Running analysis: NoOpCGSCCAnalysis
 ; CHECK-ANALYSES: Starting llvm::Function pass manager run
@@ -168,6 +176,8 @@
 ; CHECK-DO-CACHE-CGSCC-ANALYSIS-RESULTS: Running pass: RequireAnalysisPass
 ; CHECK-DO-CACHE-CGSCC-ANALYSIS-RESULTS: Running analysis: NoOpCGSCCAnalysis
 ; CHECK-DO-CACHE-CGSCC-ANALYSIS-RESULTS-NOT: Running analysis: NoOpCGSCCAnalysis
+; CHECK-DO-CACHE-CGSCC-ANALYSIS-RESULTS: Running pass: RequireAnalysisPass
+; CHECK-DO-CACHE-CGSCC-ANALYSIS-RESULTS: Running pass: RequireAnalysisPass
 
 ; RUN: opt -disable-output -debug-pass-manager \
 ; RUN:     -passes='cgscc(require<no-op-cgscc>,invalidate<no-op-cgscc>,require<no-op-cgscc>)' %s 2>&1 \
@@ -235,7 +245,7 @@
 ; CHECK-INVALIDATE-ALL-CG: Starting llvm::Module pass manager run
 ; CHECK-INVALIDATE-ALL-CG: Running pass: RequireAnalysisPass
 ; CHECK-INVALIDATE-ALL-CG-NOT: Running analysis: NoOpModuleAnalysis
-; CHECK-INVALIDATE-ALL-CG: Starting llvm::LazyCallGraph::SCC pass manager run
+; CHECK-INVALIDATE-ALL-CG: Starting llvm::CallGraphSCC pass manager run
 ; CHECK-INVALIDATE-ALL-CG: Running pass: RequireAnalysisPass
 ; CHECK-INVALIDATE-ALL-CG: Running analysis: NoOpCGSCCAnalysis
 ; CHECK-INVALIDATE-ALL-CG: Starting llvm::Function pass manager run
@@ -253,7 +263,7 @@
 ; CHECK-INVALIDATE-ALL-CG: Invalidating analysis: NoOpCGSCCAnalysis
 ; CHECK-INVALIDATE-ALL-CG: Running pass: RequireAnalysisPass
 ; CHECK-INVALIDATE-ALL-CG: Running analysis: NoOpCGSCCAnalysis
-; CHECK-INVALIDATE-ALL-CG: Finished llvm::LazyCallGraph::SCC pass manager run
+; CHECK-INVALIDATE-ALL-CG: Finished llvm::CallGraphSCC pass manager run
 ; CHECK-INVALIDATE-ALL-CG: Invalidating all non-preserved analyses
 ; CHECK-INVALIDATE-ALL-CG-NOT: Invalidating analysis: NoOpCGSCCAnalysis
 ; CHECK-INVALIDATE-ALL-CG: Invalidating all non-preserved analyses
