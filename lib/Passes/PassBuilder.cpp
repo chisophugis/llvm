@@ -72,6 +72,7 @@
 #include "llvm/Transforms/IPO/Internalize.h"
 #include "llvm/Transforms/IPO/LowerTypeTests.h"
 #include "llvm/Transforms/IPO/PartialInlining.h"
+#include "llvm/Transforms/IPO/PruneEH.h"
 #include "llvm/Transforms/IPO/SCCP.h"
 #include "llvm/Transforms/IPO/StripDeadPrototypes.h"
 #include "llvm/Transforms/IPO/WholeProgramDevirt.h"
