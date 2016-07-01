@@ -29,6 +29,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "llvm/Transforms/IPO/ArgumentPromotion.h"
 #include "llvm/Transforms/IPO.h"
 #include "llvm/ADT/DepthFirstIterator.h"
 #include "llvm/ADT/Statistic.h"
@@ -1038,4 +1039,20 @@ DoPromotion(Function *F, SmallPtrSetImpl<Argument *> &ArgsToPromote,
 
 bool ArgPromotion::doInitialization(CallGraph &CG) {
   return CallGraphSCCPass::doInitialization(CG);
+}
+PreservedAnalyses ArgumentPromotionPass::run(CallGraphSCC &C,
+                                             CGSCCAnalysisManager &AM) {
+  // XXX: do this to make sure we get the real call graph used by the
+  // ModuleToPostOrderCGSCCPassAdaptor. Can we do something more "correct"
+  // here?
+  CallGraph &CG = C.getCallGraph();
+  FunctionAnalysisManager &FAM =
+      AM.getResult<FunctionAnalysisManagerCGSCCProxy>(C).getManager();
+  std::function<AAResults &(Function & F)> AARGetter = [&](
+      Function &F) -> AAResults & { return FAM.getResult<AAManager>(F); };
+
+  bool Changed = runImpl(C, CG, AARGetter, MaxElements);
+  if (Changed)
+    return PreservedAnalyses::none();
+  return PreservedAnalyses::all();
 }
