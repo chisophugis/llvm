@@ -1,4 +1,5 @@
 ; RUN: opt < %s -prune-eh -S | not grep invoke
+; RUN: opt < %s -passes=prune-eh -S | not grep invoke
 
 define internal i32 @foo() personality i32 (...)* @__gxx_personality_v0 {
 	invoke i32 @foo( )

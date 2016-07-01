@@ -1,4 +1,5 @@
 ; RUN: opt < %s -prune-eh -S | FileCheck %s
+; RUN: opt < %s -passes=prune-eh -S | FileCheck %s
 
 declare void @nounwind() nounwind
 

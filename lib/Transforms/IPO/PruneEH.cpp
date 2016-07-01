@@ -14,6 +14,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "llvm/Transforms/IPO/PruneEH.h"
 #include "llvm/Transforms/IPO.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/Statistic.h"
@@ -270,4 +271,16 @@ static void DeleteBasicBlock(BasicBlock *BB, CallGraph &CG) {
 
     BB->eraseFromParent();
   }
+}
+
+PreservedAnalyses PruneEHPass::run(CallGraphSCC &C, AnalysisManager &AM) {
+  // XXX: do this to make sure we get the real call graph used by the
+  // ModuleToPostOrderCGSCCPassAdaptor. Can we do something more "correct"
+  // here?
+  CallGraph &CG = C.getCallGraph();
+
+  bool Changed = runImpl(C, CG);
+  if (Changed)
+    return PreservedAnalyses::none();
+  return PreservedAnalyses::all();
 }

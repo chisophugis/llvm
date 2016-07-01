@@ -1,4 +1,5 @@
 ; RUN: opt < %s -prune-eh -S | not grep "ret i32"
+; RUN: opt < %s -passes=prune-eh -S | not grep "ret i32"
 
 declare void @noreturn() noreturn
 
