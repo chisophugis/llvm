@@ -110,6 +110,10 @@ public:
       }
     }
 
+    // CallGraphAnalysis holds AssertingVH and must be invalidated eagerly so
+    // that other passes don't delete stuff from under it.
+    AM.invalidate<CallGraphAnalysis>(M);
+
     // XXX: The only use of this for CGSCC passes is in the inliner which
     // just calls removeDeadFunctions. What to do about this?
     // Should we just do a run of globaldce after the CGSCC visitation is
