@@ -34,6 +34,7 @@
 ; CHECK-CGSCC-PASS-NEXT: Starting llvm::CallGraphSCC pass manager run.
 ; CHECK-CGSCC-PASS-NEXT: Running pass: NoOpCGSCCPass on
 ; CHECK-CGSCC-PASS-NEXT: Finished llvm::CallGraphSCC pass manager run.
+; CHECK-CGSCC-PASS-NEXT: Invalidating analysis: CallGraphAnalysis
 ; CHECK-CGSCC-PASS-NEXT: Finished llvm::Module pass manager run.
 
 ; RUN: opt -disable-output -disable-verify -debug-pass-manager \

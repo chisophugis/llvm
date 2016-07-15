@@ -543,6 +543,11 @@ private:
       assert(RI != AnalysisResults.end() && "we just inserted it!");
 
       RI->second = std::prev(ResultList.end());
+    } else {
+      if (DebugLogging) {
+        auto &P = this->lookupPass(PassID);
+        dbgs() << "getResult (cache hit): " << P.name() << "\n";
+      }
     }
 
     return *RI->second->second;
@@ -552,7 +557,17 @@ private:
   ResultConceptT *getCachedResultImpl(void *PassID, IRUnitT &IR) const {
     typename AnalysisResultMapT::const_iterator RI =
         AnalysisResults.find(std::make_pair(PassID, &IR));
-    return RI == AnalysisResults.end() ? nullptr : &*RI->second->second;
+    bool Cached = RI != AnalysisResults.end();
+    if (DebugLogging) {
+      auto &P = this->lookupPass(PassID);
+      if (Cached)
+        dbgs() << "getCachedResult (cache hit): " << P.name() << "\n";
+      else
+        dbgs() << "getCachedResult (cache miss): " << P.name() << "\n";
+    }
+    if (Cached)
+      return &*RI->second->second;
+    return nullptr;
   }
 
   /// \brief Invalidate a function pass result.

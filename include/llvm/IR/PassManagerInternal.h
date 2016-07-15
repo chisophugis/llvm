@@ -201,7 +201,7 @@ template <typename IRUnitT> struct AnalysisPassConcept {
   run(IRUnitT &IR, AnalysisManager<IRUnitT> &AM) = 0;
 
   /// \brief Polymorphic method to access the name of a pass.
-  virtual StringRef name() = 0;
+  virtual StringRef name() const = 0;
 };
 
 /// \brief Wrapper to model the analysis pass concept.
@@ -240,7 +240,7 @@ struct AnalysisPassModel : AnalysisPassConcept<IRUnitT> {
   /// \brief The model delegates to a static \c PassT::name method.
   ///
   /// The returned string ref must point to constant immutable data!
-  StringRef name() override { return PassT::name(); }
+  StringRef name() const override { return PassT::name(); }
 
   PassT Pass;
 };
