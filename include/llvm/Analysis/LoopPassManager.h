@@ -118,6 +118,7 @@ public:
       // analyses will eventually occur when the module pass completes.
       PA.intersect(std::move(PassPA));
     }
+    AM.invalidate(F, PreservedAnalyses::none());
 
     // By definition we preserve the proxy. This precludes *any* invalidation of
     // loop analyses by the proxy, but that's OK because we've taken care to

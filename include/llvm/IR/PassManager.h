@@ -258,7 +258,12 @@ public:
       // invalidates analyses. We also update the preserved set of analyses
       // based on what analyses we have already handled the invalidation for
       // here and don't need to invalidate when finished.
-      PassPA = AM.invalidate(IR, std::move(PassPA));
+      if (std::is_same<IRUnitT, Function>::value) {
+        if (!PassPA.areAllPreserved())
+          PassPA = AM.invalidate(IR, PreservedAnalyses::none());
+      } else {
+        PassPA = AM.invalidate(IR, std::move(PassPA));
+      }
 
       // Finally, we intersect the final preserved analyses to compute the
       // aggregate preserved set for this pass manager.
@@ -919,7 +924,8 @@ public:
       // directly handle the function analysis manager's invalidation here and
       // update our preserved set to reflect that these have already been
       // handled.
-      PassPA = FAM.invalidate(F, std::move(PassPA));
+      if (!PassPA.areAllPreserved())
+        PassPA = FAM.invalidate(F, PreservedAnalyses::none());
 
       // Then intersect the preserved set so that invalidation of module
       // analyses will eventually occur when the module pass completes.
