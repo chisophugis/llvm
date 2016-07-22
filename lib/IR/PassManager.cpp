@@ -21,4 +21,8 @@ template class AnalysisManager<Module>;
 template class AnalysisManager<Function>;
 template class InnerAnalysisManagerProxy<FunctionAnalysisManager, Module>;
 template class OuterAnalysisManagerProxy<ModuleAnalysisManager, Function>;
+
+cl::opt<bool> DisableFunctionAnalysisCaching(
+    "disable-function-analysis-caching",
+    cl::desc("Disable function analysis caching"));
 }

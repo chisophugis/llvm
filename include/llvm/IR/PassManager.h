@@ -54,6 +54,8 @@
 
 namespace llvm {
 
+extern cl::opt<bool> DisableFunctionAnalysisCaching;
+
 /// \brief An abstract set of preserved analyses following a transformation pass
 /// run.
 ///
@@ -259,8 +261,14 @@ public:
       // based on what analyses we have already handled the invalidation for
       // here and don't need to invalidate when finished.
       if (std::is_same<IRUnitT, Function>::value) {
-        if (!PassPA.areAllPreserved())
+        if (DisableFunctionAnalysisCaching) {
+          // Invalidate everything.
           PassPA = AM.invalidate(IR, PreservedAnalyses::none());
+        } else {
+          // Invalidate everything only if a change was made.
+          if (!PassPA.areAllPreserved())
+            PassPA = AM.invalidate(IR, PreservedAnalyses::none());
+        }
       } else {
         PassPA = AM.invalidate(IR, std::move(PassPA));
       }
@@ -924,8 +932,14 @@ public:
       // directly handle the function analysis manager's invalidation here and
       // update our preserved set to reflect that these have already been
       // handled.
-      if (!PassPA.areAllPreserved())
+      if (DisableFunctionAnalysisCaching) {
+        // Invalidate everything.
         PassPA = FAM.invalidate(F, PreservedAnalyses::none());
+      } else {
+        // Invalidate everything only if a change was made.
+        if (!PassPA.areAllPreserved())
+          PassPA = FAM.invalidate(F, PreservedAnalyses::none());
+      }
 
       // Then intersect the preserved set so that invalidation of module
       // analyses will eventually occur when the module pass completes.
