@@ -535,7 +535,7 @@ private:
       if (DebugLogging)
         dbgs() << "Running analysis: " << P.name() << "\n";
       AnalysisResultListT &ResultList = AnalysisResultLists[&IR];
-      ResultList.emplace_back(PassID, P.run(IR, *this));
+      ResultList.emplace_back(PassID, P.run((void *)&IR, *this));
 
       // P.run may have inserted elements into AnalysisResults and invalidated
       // RI.
@@ -591,7 +591,7 @@ private:
       // Pass the invalidation down to the pass itself to see if it thinks it is
       // necessary. The analysis pass can return false if no action on the part
       // of the analysis manager is required for this invalidation event.
-      if (I->second->invalidate(IR, PA)) {
+      if (I->second->invalidate((void *)&IR, PA)) {
         if (DebugLogging)
           dbgs() << "Invalidating analysis: " << this->lookupPass(PassID).name()
                  << "\n";
