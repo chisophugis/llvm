@@ -170,6 +170,28 @@ private:
   SmallPtrSet<void *, 2> PreservedPassIDs;
 };
 
+// The key used for holding analyses registered in the analysis manager.
+struct AnalysisKey {
+  void *AnalysisID;
+  int IRUnitKindID;
+};
+
+static inline int getIRUnitKindID(Function *) { return 0; }
+static inline int getIRUnitKindID(Module *) { return 1; }
+
+// Provide DenseMapInfo for AnalysisKey
+template <> struct DenseMapInfo<AnalysisKey> {
+  static inline AnalysisKey getEmptyKey() { return {nullptr, 0}; }
+  static inline AnalysisKey getTombstoneKey() { return {nullptr, 1}; }
+  static unsigned getHashValue(const AnalysisKey &Val) {
+    return hash_combine(Val.AnalysisID, Val.IRUnitKindID);
+  }
+  static bool isEqual(const AnalysisKey &LHS, const AnalysisKey &RHS) {
+    return LHS.AnalysisID == RHS.AnalysisID &&
+           LHS.IRUnitKindID == RHS.IRUnitKindID;
+  }
+};
+
 // Forward declare the analysis manager template.
 template <typename IRUnitT> class AnalysisManager;
 
@@ -321,7 +343,8 @@ namespace detail {
 /// managing analyses. This base class is factored so that if you need to
 /// customize the handling of a specific IR unit, you can do so without
 /// replicating *all* of the boilerplate.
-template <typename DerivedT, typename IRUnitT> class AnalysisManagerBase {
+template <typename DerivedT, typename IRUnitTOnClass>
+class AnalysisManagerBase {
   DerivedT *derived_this() { return static_cast<DerivedT *>(this); }
   const DerivedT *derived_this() const {
     return static_cast<const DerivedT *>(this);
@@ -331,8 +354,8 @@ template <typename DerivedT, typename IRUnitT> class AnalysisManagerBase {
   AnalysisManagerBase &operator=(const AnalysisManagerBase &) = delete;
 
 protected:
-  typedef detail::AnalysisResultConcept<IRUnitT> ResultConceptT;
-  typedef detail::AnalysisPassConcept<IRUnitT> PassConceptT;
+  typedef detail::AnalysisResultConcept<IRUnitTOnClass> ResultConceptT;
+  typedef detail::AnalysisPassConcept<IRUnitTOnClass> PassConceptT;
 
   // FIXME: Provide template aliases for the models when we're using C++11 in
   // a mode supporting them.
@@ -352,12 +375,13 @@ public:
   ///
   /// If there is not a valid cached result in the manager already, this will
   /// re-run the analysis to produce a valid result.
-  template <typename PassT> typename PassT::Result &getResult(IRUnitT &IR) {
-    assert(AnalysisPasses.count(PassT::ID()) &&
+  template <typename PassT, typename IRUnitT>
+  typename PassT::Result &getResult(IRUnitT &IR) {
+    AnalysisKey AK = {PassT::ID(), getIRUnitKindID(&IR)};
+    assert(AnalysisPasses.count(AK) &&
            "This analysis pass was not registered prior to being queried");
 
-    ResultConceptT &ResultConcept =
-        derived_this()->getResultImpl(PassT::ID(), IR);
+    ResultConceptT &ResultConcept = derived_this()->getResultImpl(AK, IR);
     typedef detail::AnalysisResultModel<IRUnitT, PassT, typename PassT::Result>
         ResultModelT;
     return static_cast<ResultModelT &>(ResultConcept).Result;
@@ -368,13 +392,13 @@ public:
   /// This method never runs the analysis.
   ///
   /// \returns null if there is no cached result.
-  template <typename PassT>
+  template <typename PassT, typename IRUnitT>
   typename PassT::Result *getCachedResult(IRUnitT &IR) const {
-    assert(AnalysisPasses.count(PassT::ID()) &&
+    AnalysisKey AK = {PassT::ID(), getIRUnitKindID(&IR)};
+    assert(AnalysisPasses.count(AK) &&
            "This analysis pass was not registered prior to being queried");
 
-    ResultConceptT *ResultConcept =
-        derived_this()->getCachedResultImpl(PassT::ID(), IR);
+    ResultConceptT *ResultConcept = derived_this()->getCachedResultImpl(AK, IR);
     if (!ResultConcept)
       return nullptr;
 
@@ -401,11 +425,13 @@ public:
   /// interface also lends itself to minimizing the number of times we have to
   /// do lookups for analyses or construct complex passes only to throw them
   /// away.
-  template <typename PassBuilderT> bool registerPass(PassBuilderT PassBuilder) {
+  template <typename IRUnitT, typename PassBuilderT>
+  bool registerPass(PassBuilderT PassBuilder) {
     typedef decltype(PassBuilder()) PassT;
     typedef detail::AnalysisPassModel<IRUnitT, PassT> PassModelT;
 
-    auto &PassPtr = AnalysisPasses[PassT::ID()];
+    AnalysisKey AK = {PassT::ID(), getIRUnitKindID((IRUnitT *)nullptr)};
+    auto &PassPtr = AnalysisPasses[AK];
     if (PassPtr)
       // Already registered this pass type!
       return false;
@@ -418,10 +444,11 @@ public:
   /// \brief Invalidate a specific analysis pass for an IR module.
   ///
   /// Note that the analysis result can disregard invalidation.
-  template <typename PassT> void invalidate(IRUnitT &IR) {
-    assert(AnalysisPasses.count(PassT::ID()) &&
+  template <typename PassT, typename IRUnitT> void invalidate(IRUnitT &IR) {
+    AnalysisKey AK = {PassT::ID(), getIRUnitKindID(&IR)};
+    assert(AnalysisPasses.count(AK) &&
            "This analysis pass was not registered prior to being invalidated");
-    derived_this()->invalidateImpl(PassT::ID(), IR);
+    derived_this()->invalidateImpl(AK, IR);
   }
 
   /// \brief Invalidate analyses cached for an IR unit.
@@ -431,22 +458,23 @@ public:
   /// We accept the PreservedAnalyses set by value and update it with each
   /// analyis pass which has been successfully invalidated and thus can be
   /// preserved going forward. The updated set is returned.
+  template <typename IRUnitT>
   PreservedAnalyses invalidate(IRUnitT &IR, PreservedAnalyses PA) {
     return derived_this()->invalidateImpl(IR, std::move(PA));
   }
 
 protected:
   /// \brief Lookup a registered analysis pass.
-  PassConceptT &lookupPass(void *PassID) {
-    typename AnalysisPassMapT::iterator PI = AnalysisPasses.find(PassID);
+  PassConceptT &lookupPass(AnalysisKey AK) {
+    typename AnalysisPassMapT::iterator PI = AnalysisPasses.find(AK);
     assert(PI != AnalysisPasses.end() &&
            "Analysis passes must be registered prior to being queried!");
     return *PI->second;
   }
 
   /// \brief Lookup a registered analysis pass.
-  const PassConceptT &lookupPass(void *PassID) const {
-    typename AnalysisPassMapT::const_iterator PI = AnalysisPasses.find(PassID);
+  const PassConceptT &lookupPass(AnalysisKey AK) const {
+    typename AnalysisPassMapT::const_iterator PI = AnalysisPasses.find(AK);
     assert(PI != AnalysisPasses.end() &&
            "Analysis passes must be registered prior to being queried!");
     return *PI->second;
@@ -454,7 +482,7 @@ protected:
 
 private:
   /// \brief Map type from module analysis pass ID to pass concept pointer.
-  typedef DenseMap<void *, std::unique_ptr<PassConceptT>> AnalysisPassMapT;
+  typedef DenseMap<AnalysisKey, std::unique_ptr<PassConceptT>> AnalysisPassMapT;
 
   /// \brief Collection of module analysis passes, indexed by ID.
   AnalysisPassMapT AnalysisPasses;
@@ -468,11 +496,15 @@ private:
 /// This analysis manager can be used for any IR unit where the address of the
 /// IR unit sufficies as its identity. It manages the cache for a unit of IR via
 /// the address of each unit of IR cached.
-template <typename IRUnitT>
+template <typename IRUnitTOnClass>
 class AnalysisManager
-    : public detail::AnalysisManagerBase<AnalysisManager<IRUnitT>, IRUnitT> {
-  friend class detail::AnalysisManagerBase<AnalysisManager<IRUnitT>, IRUnitT>;
-  typedef detail::AnalysisManagerBase<AnalysisManager<IRUnitT>, IRUnitT> BaseT;
+    : public detail::AnalysisManagerBase<AnalysisManager<IRUnitTOnClass>,
+                                         IRUnitTOnClass> {
+  friend class detail::AnalysisManagerBase<AnalysisManager<IRUnitTOnClass>,
+                                           IRUnitTOnClass>;
+  typedef detail::AnalysisManagerBase<AnalysisManager<IRUnitTOnClass>,
+                                      IRUnitTOnClass>
+      BaseT;
   typedef typename BaseT::ResultConceptT ResultConceptT;
   typedef typename BaseT::PassConceptT PassConceptT;
 
@@ -522,24 +554,29 @@ private:
   AnalysisManager &operator=(const AnalysisManager &) = delete;
 
   /// \brief Get an analysis result, running the pass if necessary.
-  ResultConceptT &getResultImpl(void *PassID, IRUnitT &IR) {
+  template <typename IRUnitT>
+  ResultConceptT &getResultImpl(AnalysisKey AK, IRUnitT &IR) {
     typename AnalysisResultMapT::iterator RI;
     bool Inserted;
-    std::tie(RI, Inserted) = AnalysisResults.insert(std::make_pair(
-        std::make_pair(PassID, &IR), typename AnalysisResultListT::iterator()));
+    std::tie(RI, Inserted) = AnalysisResults.insert(
+        std::make_pair(std::make_pair(AK, static_cast<TypeErasedIRUnitID>(&IR)),
+                       typename AnalysisResultListT::iterator()));
 
     // If we don't have a cached result for this function, look up the pass and
     // run it to produce a result, which we then add to the cache.
     if (Inserted) {
-      auto &P = this->lookupPass(PassID);
+      auto &P = this->lookupPass(AK);
       if (DebugLogging)
         dbgs() << "Running analysis: " << P.name() << "\n";
-      AnalysisResultListT &ResultList = AnalysisResultLists[&IR];
-      ResultList.emplace_back(PassID, P.run((void *)&IR, *this));
+      AnalysisResultListT &ResultList =
+          AnalysisResultLists[static_cast<TypeErasedIRUnitID>(&IR)];
+      ResultList.emplace_back(
+          AK, P.run(static_cast<TypeErasedIRUnitID>(&IR), *this));
 
       // P.run may have inserted elements into AnalysisResults and invalidated
       // RI.
-      RI = AnalysisResults.find(std::make_pair(PassID, &IR));
+      RI = AnalysisResults.find(
+          std::make_pair(AK, static_cast<TypeErasedIRUnitID>(&IR)));
       assert(RI != AnalysisResults.end() && "we just inserted it!");
 
       RI->second = std::prev(ResultList.end());
@@ -549,27 +586,29 @@ private:
   }
 
   /// \brief Get a cached analysis result or return null.
-  ResultConceptT *getCachedResultImpl(void *PassID, IRUnitT &IR) const {
-    typename AnalysisResultMapT::const_iterator RI =
-        AnalysisResults.find(std::make_pair(PassID, &IR));
+  template <typename IRUnitT>
+  ResultConceptT *getCachedResultImpl(AnalysisKey AK, IRUnitT &IR) const {
+    typename AnalysisResultMapT::const_iterator RI = AnalysisResults.find(
+        std::make_pair(AK, static_cast<TypeErasedIRUnitID>(&IR)));
     return RI == AnalysisResults.end() ? nullptr : &*RI->second->second;
   }
 
   /// \brief Invalidate a function pass result.
-  void invalidateImpl(void *PassID, IRUnitT &IR) {
-    typename AnalysisResultMapT::iterator RI =
-        AnalysisResults.find(std::make_pair(PassID, &IR));
+  template <typename IRUnitT> void invalidateImpl(AnalysisKey AK, IRUnitT &IR) {
+    typename AnalysisResultMapT::iterator RI = AnalysisResults.find(
+        std::make_pair(AK, static_cast<TypeErasedIRUnitID>(&IR)));
     if (RI == AnalysisResults.end())
       return;
 
     if (DebugLogging)
-      dbgs() << "Invalidating analysis: " << this->lookupPass(PassID).name()
+      dbgs() << "Invalidating analysis: " << this->lookupPass(AK).name()
              << "\n";
-    AnalysisResultLists[&IR].erase(RI->second);
+    AnalysisResultLists[static_cast<TypeErasedIRUnitID>(&IR)].erase(RI->second);
     AnalysisResults.erase(RI);
   }
 
   /// \brief Invalidate the results for a function..
+  template <typename IRUnitT>
   PreservedAnalyses invalidateImpl(IRUnitT &IR, PreservedAnalyses PA) {
     // Short circuit for a common case of all analyses being preserved.
     if (PA.areAllPreserved())
@@ -581,22 +620,23 @@ private:
 
     // Clear all the invalidated results associated specifically with this
     // function.
-    SmallVector<void *, 8> InvalidatedPassIDs;
-    AnalysisResultListT &ResultsList = AnalysisResultLists[&IR];
+    SmallVector<AnalysisKey, 8> InvalidatedAnalysisKeys;
+    AnalysisResultListT &ResultsList =
+        AnalysisResultLists[static_cast<TypeErasedIRUnitID>(&IR)];
     for (typename AnalysisResultListT::iterator I = ResultsList.begin(),
                                                 E = ResultsList.end();
          I != E;) {
-      void *PassID = I->first;
+      AnalysisKey AK = I->first;
 
       // Pass the invalidation down to the pass itself to see if it thinks it is
       // necessary. The analysis pass can return false if no action on the part
       // of the analysis manager is required for this invalidation event.
-      if (I->second->invalidate((void *)&IR, PA)) {
+      if (I->second->invalidate(static_cast<TypeErasedIRUnitID>(&IR), PA)) {
         if (DebugLogging)
-          dbgs() << "Invalidating analysis: " << this->lookupPass(PassID).name()
+          dbgs() << "Invalidating analysis: " << this->lookupPass(AK).name()
                  << "\n";
 
-        InvalidatedPassIDs.push_back(I->first);
+        InvalidatedAnalysisKeys.push_back(I->first);
         I = ResultsList.erase(I);
       } else {
         ++I;
@@ -605,13 +645,14 @@ private:
       // After handling each pass, we mark it as preserved. Once we've
       // invalidated any stale results, the rest of the system is allowed to
       // start preserving this analysis again.
-      PA.preserve(PassID);
+      PA.preserve(AK.AnalysisID);
     }
-    while (!InvalidatedPassIDs.empty())
+    while (!InvalidatedAnalysisKeys.empty())
       AnalysisResults.erase(
-          std::make_pair(InvalidatedPassIDs.pop_back_val(), &IR));
+          std::make_pair(InvalidatedAnalysisKeys.pop_back_val(),
+                         static_cast<TypeErasedIRUnitID>(&IR)));
     if (ResultsList.empty())
-      AnalysisResultLists.erase(&IR);
+      AnalysisResultLists.erase(static_cast<TypeErasedIRUnitID>(&IR));
 
     return PA;
   }
@@ -621,12 +662,14 @@ private:
   /// Requires iterators to be valid across appending new entries and arbitrary
   /// erases. Provides both the pass ID and concept pointer such that it is
   /// half of a bijection and provides storage for the actual result concept.
-  typedef std::list<std::pair<
-      void *, std::unique_ptr<detail::AnalysisResultConcept<IRUnitT>>>>
+  typedef std::list<
+      std::pair<AnalysisKey,
+                std::unique_ptr<detail::AnalysisResultConcept<IRUnitTOnClass>>>>
       AnalysisResultListT;
 
   /// \brief Map type from function pointer to our custom list type.
-  typedef DenseMap<IRUnitT *, AnalysisResultListT> AnalysisResultListMapT;
+  typedef DenseMap<TypeErasedIRUnitID, AnalysisResultListT>
+      AnalysisResultListMapT;
 
   /// \brief Map from function to a list of function analysis results.
   ///
@@ -636,7 +679,7 @@ private:
 
   /// \brief Map type from a pair of analysis ID and function pointer to an
   /// iterator into a particular result list.
-  typedef DenseMap<std::pair<void *, IRUnitT *>,
+  typedef DenseMap<std::pair<AnalysisKey, TypeErasedIRUnitID>,
                    typename AnalysisResultListT::iterator>
       AnalysisResultMapT;
 

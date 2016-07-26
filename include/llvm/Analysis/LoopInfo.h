@@ -53,6 +53,7 @@ namespace llvm {
 class DominatorTree;
 class LoopInfo;
 class Loop;
+static inline int getIRUnitKindID(Loop *) { return 2; }
 class MDNode;
 class PHINode;
 class raw_ostream;
