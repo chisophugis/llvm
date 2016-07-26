@@ -69,7 +69,7 @@ bool llvm::runPassPipeline(StringRef Arg0, LLVMContext &Context, Module &M,
   ModuleAnalysisManager MAM(DebugPM);
 
   // Register the AA manager first so that our version is the one used.
-  FAM.registerPass([&] { return std::move(AA); });
+  FAM.registerPass<Function>([&] { return std::move(AA); });
 
   // Register all the basic analyses with the managers.
   PB.registerModuleAnalyses(MAM);

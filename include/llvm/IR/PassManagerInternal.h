@@ -23,6 +23,9 @@
 
 namespace llvm {
 
+/// More semantically meaningful name for opaque handle type.
+typedef void *TypeErasedIRUnitID;
+
 template <typename IRUnitT> class AnalysisManager;
 class PreservedAnalyses;
 
@@ -92,7 +95,8 @@ template <typename IRUnitT> struct AnalysisResultConcept {
   /// took care to update or preserve the analysis result in some way.
   ///
   /// \returns true if the result is indeed invalid (the default).
-  virtual bool invalidate(void *IR, const PreservedAnalyses &PA) = 0;
+  virtual bool invalidate(TypeErasedIRUnitID IR,
+                          const PreservedAnalyses &PA) = 0;
 };
 
 /// \brief SFINAE metafunction for computing whether \c ResultT provides an
@@ -151,7 +155,8 @@ struct AnalysisResultModel<IRUnitT, PassT, ResultT, PreservedAnalysesT, false>
   // FIXME: We should actually use two different concepts for analysis results
   // rather than two different models, and avoid the indirect function call for
   // ones that use the trivial behavior.
-  bool invalidate(void *IR, const PreservedAnalysesT &PA) override {
+  bool invalidate(TypeErasedIRUnitID IR,
+                  const PreservedAnalysesT &PA) override {
     return !PA.preserved(PassT::ID());
   }
 
@@ -180,7 +185,8 @@ struct AnalysisResultModel<IRUnitT, PassT, ResultT, PreservedAnalysesT, true>
   }
 
   /// \brief The model delegates to the \c ResultT method.
-  bool invalidate(void *IR, const PreservedAnalysesT &PA) override {
+  bool invalidate(TypeErasedIRUnitID IR,
+                  const PreservedAnalysesT &PA) override {
     return Result.invalidate(*(IRUnitT *)IR, PA);
   }
 
@@ -198,7 +204,7 @@ template <typename IRUnitT> struct AnalysisPassConcept {
   /// \returns A unique_ptr to the analysis result object to be queried by
   /// users.
   virtual std::unique_ptr<AnalysisResultConcept<IRUnitT>>
-  run(void *IR, AnalysisManager<IRUnitT> &AM) = 0;
+  run(TypeErasedIRUnitID IR, AnalysisManager<IRUnitT> &AM) = 0;
 
   /// \brief Polymorphic method to access the name of a pass.
   virtual StringRef name() = 0;

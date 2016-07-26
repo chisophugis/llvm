@@ -146,18 +146,21 @@ public:
 TEST_F(LoopPassManagerTest, Basic) {
   LoopAnalysisManager LAM(true);
   int LoopAnalysisRuns = 0;
-  LAM.registerPass([&] { return TestLoopAnalysis(LoopAnalysisRuns); });
+  LAM.registerPass<Loop>([&] { return TestLoopAnalysis(LoopAnalysisRuns); });
 
   FunctionAnalysisManager FAM(true);
   // We need DominatorTreeAnalysis for LoopAnalysis.
-  FAM.registerPass([&] { return DominatorTreeAnalysis(); });
-  FAM.registerPass([&] { return LoopAnalysis(); });
-  FAM.registerPass([&] { return LoopAnalysisManagerFunctionProxy(LAM); });
-  LAM.registerPass([&] { return FunctionAnalysisManagerLoopProxy(FAM); });
+  FAM.registerPass<Function>([&] { return DominatorTreeAnalysis(); });
+  FAM.registerPass<Function>([&] { return LoopAnalysis(); });
+  FAM.registerPass<Function>(
+      [&] { return LoopAnalysisManagerFunctionProxy(LAM); });
+  LAM.registerPass<Loop>([&] { return FunctionAnalysisManagerLoopProxy(FAM); });
 
   ModuleAnalysisManager MAM(true);
-  MAM.registerPass([&] { return FunctionAnalysisManagerModuleProxy(FAM); });
-  FAM.registerPass([&] { return ModuleAnalysisManagerFunctionProxy(MAM); });
+  MAM.registerPass<Module>(
+      [&] { return FunctionAnalysisManagerModuleProxy(FAM); });
+  FAM.registerPass<Function>(
+      [&] { return ModuleAnalysisManagerFunctionProxy(MAM); });
 
   ModulePassManager MPM(true);
   FunctionPassManager FPM(true);
