@@ -252,27 +252,36 @@ TEST(CGSCCPassManagerTest, Basic) {
                    "}\n");
   FunctionAnalysisManager FAM(/*DebugLogging*/ true);
   int FunctionAnalysisRuns = 0;
-  FAM.registerPass([&] { return TestFunctionAnalysis(FunctionAnalysisRuns); });
+  FAM.registerPass<Function>(
+      [&] { return TestFunctionAnalysis(FunctionAnalysisRuns); });
   int ImmutableFunctionAnalysisRuns = 0;
-  FAM.registerPass([&] {
+  FAM.registerPass<Function>([&] {
     return TestImmutableFunctionAnalysis(ImmutableFunctionAnalysisRuns);
   });
 
   CGSCCAnalysisManager CGAM(/*DebugLogging*/ true);
   int SCCAnalysisRuns = 0;
-  CGAM.registerPass([&] { return TestSCCAnalysis(SCCAnalysisRuns); });
+  CGAM.registerPass<LazyCallGraph::SCC>(
+      [&] { return TestSCCAnalysis(SCCAnalysisRuns); });
 
   ModuleAnalysisManager MAM(/*DebugLogging*/ true);
   int ModuleAnalysisRuns = 0;
-  MAM.registerPass([&] { return LazyCallGraphAnalysis(); });
-  MAM.registerPass([&] { return TestModuleAnalysis(ModuleAnalysisRuns); });
+  MAM.registerPass<Module>([&] { return LazyCallGraphAnalysis(); });
+  MAM.registerPass<Module>(
+      [&] { return TestModuleAnalysis(ModuleAnalysisRuns); });
 
-  MAM.registerPass([&] { return FunctionAnalysisManagerModuleProxy(FAM); });
-  MAM.registerPass([&] { return CGSCCAnalysisManagerModuleProxy(CGAM); });
-  CGAM.registerPass([&] { return FunctionAnalysisManagerCGSCCProxy(FAM); });
-  CGAM.registerPass([&] { return ModuleAnalysisManagerCGSCCProxy(MAM); });
-  FAM.registerPass([&] { return CGSCCAnalysisManagerFunctionProxy(CGAM); });
-  FAM.registerPass([&] { return ModuleAnalysisManagerFunctionProxy(MAM); });
+  MAM.registerPass<Module>(
+      [&] { return FunctionAnalysisManagerModuleProxy(FAM); });
+  MAM.registerPass<Module>(
+      [&] { return CGSCCAnalysisManagerModuleProxy(CGAM); });
+  CGAM.registerPass<LazyCallGraph::SCC>(
+      [&] { return FunctionAnalysisManagerCGSCCProxy(FAM); });
+  CGAM.registerPass<LazyCallGraph::SCC>(
+      [&] { return ModuleAnalysisManagerCGSCCProxy(MAM); });
+  FAM.registerPass<Function>(
+      [&] { return CGSCCAnalysisManagerFunctionProxy(CGAM); });
+  FAM.registerPass<Function>(
+      [&] { return ModuleAnalysisManagerFunctionProxy(MAM); });
 
   ModulePassManager MPM(/*DebugLogging*/ true);
   int ModulePassRunCount1 = 0;

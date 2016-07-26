@@ -221,25 +221,25 @@ char NoOpLoopAnalysis::PassID;
 
 void PassBuilder::registerModuleAnalyses(ModuleAnalysisManager &MAM) {
 #define MODULE_ANALYSIS(NAME, CREATE_PASS)                                     \
-  MAM.registerPass([&] { return CREATE_PASS; });
+  MAM.registerPass<Module>([&] { return CREATE_PASS; });
 #include "PassRegistry.def"
 }
 
 void PassBuilder::registerCGSCCAnalyses(CGSCCAnalysisManager &CGAM) {
 #define CGSCC_ANALYSIS(NAME, CREATE_PASS)                                      \
-  CGAM.registerPass([&] { return CREATE_PASS; });
+  CGAM.registerPass<LazyCallGraph::SCC>([&] { return CREATE_PASS; });
 #include "PassRegistry.def"
 }
 
 void PassBuilder::registerFunctionAnalyses(FunctionAnalysisManager &FAM) {
 #define FUNCTION_ANALYSIS(NAME, CREATE_PASS)                                   \
-  FAM.registerPass([&] { return CREATE_PASS; });
+  FAM.registerPass<Function>([&] { return CREATE_PASS; });
 #include "PassRegistry.def"
 }
 
 void PassBuilder::registerLoopAnalyses(LoopAnalysisManager &LAM) {
 #define LOOP_ANALYSIS(NAME, CREATE_PASS)                                       \
-  LAM.registerPass([&] { return CREATE_PASS; });
+  LAM.registerPass<Loop>([&] { return CREATE_PASS; });
 #include "PassRegistry.def"
 }
 
@@ -755,14 +755,21 @@ void PassBuilder::crossRegisterProxies(LoopAnalysisManager &LAM,
                                        FunctionAnalysisManager &FAM,
                                        CGSCCAnalysisManager &CGAM,
                                        ModuleAnalysisManager &MAM) {
-  MAM.registerPass([&] { return FunctionAnalysisManagerModuleProxy(FAM); });
-  MAM.registerPass([&] { return CGSCCAnalysisManagerModuleProxy(CGAM); });
-  CGAM.registerPass([&] { return FunctionAnalysisManagerCGSCCProxy(FAM); });
-  CGAM.registerPass([&] { return ModuleAnalysisManagerCGSCCProxy(MAM); });
-  FAM.registerPass([&] { return CGSCCAnalysisManagerFunctionProxy(CGAM); });
-  FAM.registerPass([&] { return ModuleAnalysisManagerFunctionProxy(MAM); });
-  FAM.registerPass([&] { return LoopAnalysisManagerFunctionProxy(LAM); });
-  LAM.registerPass([&] { return FunctionAnalysisManagerLoopProxy(FAM); });
+  MAM.registerPass<Module>(
+      [&] { return FunctionAnalysisManagerModuleProxy(FAM); });
+  MAM.registerPass<Module>(
+      [&] { return CGSCCAnalysisManagerModuleProxy(CGAM); });
+  CGAM.registerPass<LazyCallGraph::SCC>(
+      [&] { return FunctionAnalysisManagerCGSCCProxy(FAM); });
+  CGAM.registerPass<LazyCallGraph::SCC>(
+      [&] { return ModuleAnalysisManagerCGSCCProxy(MAM); });
+  FAM.registerPass<Function>(
+      [&] { return CGSCCAnalysisManagerFunctionProxy(CGAM); });
+  FAM.registerPass<Function>(
+      [&] { return ModuleAnalysisManagerFunctionProxy(MAM); });
+  FAM.registerPass<Function>(
+      [&] { return LoopAnalysisManagerFunctionProxy(LAM); });
+  LAM.registerPass<Loop>([&] { return FunctionAnalysisManagerLoopProxy(FAM); });
 }
 
 bool PassBuilder::parseModulePassPipeline(ModulePassManager &MPM,
