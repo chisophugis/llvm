@@ -125,45 +125,36 @@ public:
 
   explicit PassBuilder(TargetMachine *TM = nullptr) : TM(TM) {}
 
-  /// \brief Cross register the analysis managers through their proxies.
-  ///
-  /// This is an interface that can be used to cross register each
-  // AnalysisManager with all the others analysis managers.
-  void crossRegisterProxies(LoopAnalysisManager &LAM,
-                            FunctionAnalysisManager &FAM,
-                            CGSCCAnalysisManager &CGAM,
-                            ModuleAnalysisManager &MAM);
-
   /// \brief Registers all available module analysis passes.
   ///
-  /// This is an interface that can be used to populate a \c
-  /// ModuleAnalysisManager with all registered module analyses. Callers can
+  /// This is an interface that can be used to populate an \c
+  /// AnalysisManager with all registered module analyses. Callers can
   /// still manually register any additional analyses. Callers can also
   /// pre-register analyses and this will not override those.
-  void registerModuleAnalyses(ModuleAnalysisManager &MAM);
+  void registerModuleAnalyses(AnalysisManager &AM);
 
   /// \brief Registers all available CGSCC analysis passes.
   ///
-  /// This is an interface that can be used to populate a \c CGSCCAnalysisManager
+  /// This is an interface that can be used to populate an \c AnalysisManager
   /// with all registered CGSCC analyses. Callers can still manually register any
   /// additional analyses. Callers can also pre-register analyses and this will
   /// not override those.
-  void registerCGSCCAnalyses(CGSCCAnalysisManager &CGAM);
+  void registerCGSCCAnalyses(AnalysisManager &AM);
 
   /// \brief Registers all available function analysis passes.
   ///
-  /// This is an interface that can be used to populate a \c
-  /// FunctionAnalysisManager with all registered function analyses. Callers can
+  /// This is an interface that can be used to populate an \c
+  /// AnalysisManager with all registered function analyses. Callers can
   /// still manually register any additional analyses. Callers can also
   /// pre-register analyses and this will not override those.
-  void registerFunctionAnalyses(FunctionAnalysisManager &FAM);
+  void registerFunctionAnalyses(AnalysisManager &AM);
 
   /// \brief Registers all available loop analysis passes.
   ///
-  /// This is an interface that can be used to populate a \c LoopAnalysisManager
+  /// This is an interface that can be used to populate an \c AnalysisManager
   /// with all registered loop analyses. Callers can still manually register any
   /// additional analyses.
-  void registerLoopAnalyses(LoopAnalysisManager &LAM);
+  void registerLoopAnalyses(AnalysisManager &AM);
 
   /// \brief Add a per-module default optimization pipeline to a pass manager.
   ///

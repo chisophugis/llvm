@@ -54,7 +54,7 @@ static bool stripDeadPrototypes(Module &M) {
 }
 
 PreservedAnalyses StripDeadPrototypesPass::run(Module &M,
-                                               ModuleAnalysisManager &) {
+                                               AnalysisManager &) {
   if (stripDeadPrototypes(M))
     return PreservedAnalyses::none();
   return PreservedAnalyses::all();

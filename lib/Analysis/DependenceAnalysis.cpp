@@ -114,11 +114,11 @@ Delinearize("da-delinearize", cl::init(false), cl::Hidden, cl::ZeroOrMore,
 //===----------------------------------------------------------------------===//
 // basics
 
-DependenceAnalysis::Result
-DependenceAnalysis::run(Function &F, FunctionAnalysisManager &FAM) {
-  auto &AA = FAM.getResult<AAManager>(F);
-  auto &SE = FAM.getResult<ScalarEvolutionAnalysis>(F);
-  auto &LI = FAM.getResult<LoopAnalysis>(F);
+DependenceAnalysis::Result DependenceAnalysis::run(Function &F,
+                                                   AnalysisManager &AM) {
+  auto &AA = AM.getResult<AAManager>(F);
+  auto &SE = AM.getResult<ScalarEvolutionAnalysis>(F);
+  auto &LI = AM.getResult<LoopAnalysis>(F);
   return DependenceInfo(&F, &AA, &SE, &LI);
 }
 

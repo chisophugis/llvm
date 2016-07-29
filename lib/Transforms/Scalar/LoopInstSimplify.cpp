@@ -184,16 +184,14 @@ public:
 }
 
 PreservedAnalyses LoopInstSimplifyPass::run(Loop &L,
-                                            AnalysisManager<Loop> &AM) {
-  const auto &FAM =
-      AM.getResult<FunctionAnalysisManagerLoopProxy>(L).getManager();
+                                            AnalysisManager &AM) {
   Function *F = L.getHeader()->getParent();
 
   // Use getCachedResult because Loop pass cannot trigger a function analysis.
-  auto *DT = FAM.getCachedResult<DominatorTreeAnalysis>(*F);
-  auto *LI = FAM.getCachedResult<LoopAnalysis>(*F);
-  auto *AC = FAM.getCachedResult<AssumptionAnalysis>(*F);
-  const auto *TLI = FAM.getCachedResult<TargetLibraryAnalysis>(*F);
+  auto *DT = AM.getCachedResult<DominatorTreeAnalysis>(*F);
+  auto *LI = AM.getCachedResult<LoopAnalysis>(*F);
+  auto *AC = AM.getCachedResult<AssumptionAnalysis>(*F);
+  const auto *TLI = AM.getCachedResult<TargetLibraryAnalysis>(*F);
   assert((LI && AC && TLI) && "Analyses for Loop Inst Simplify not available");
 
   if (!SimplifyLoopInst(&L, DT, LI, AC, TLI))

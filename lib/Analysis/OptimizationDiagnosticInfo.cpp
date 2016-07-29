@@ -119,7 +119,7 @@ char OptimizationRemarkEmitterAnalysis::PassID;
 
 OptimizationRemarkEmitter
 OptimizationRemarkEmitterAnalysis::run(Function &F,
-                                       AnalysisManager<Function> &AM) {
+                                       AnalysisManager &AM) {
   BlockFrequencyInfo *BFI;
 
   if (F.getContext().getDiagnosticHotnessRequested())

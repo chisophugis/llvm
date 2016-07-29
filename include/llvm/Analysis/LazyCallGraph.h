@@ -909,8 +909,6 @@ private:
   RefSCC *getNextRefSCCInPostOrder();
 };
 
-static inline int getIRUnitKindID(LazyCallGraph::SCC *) { return 3; }
-
 inline LazyCallGraph::Edge::Edge() : Value() {}
 inline LazyCallGraph::Edge::Edge(Function &F, Kind K) : Value(&F, K) {}
 inline LazyCallGraph::Edge::Edge(Node &N, Kind K) : Value(&N, K) {}
@@ -984,7 +982,7 @@ public:
   ///
   /// This just builds the set of entry points to the call graph. The rest is
   /// built lazily as it is walked.
-  LazyCallGraph run(Module &M, ModuleAnalysisManager &) {
+  LazyCallGraph run(Module &M, AnalysisManager &) {
     return LazyCallGraph(M);
   }
 };
@@ -999,7 +997,7 @@ class LazyCallGraphPrinterPass
 public:
   explicit LazyCallGraphPrinterPass(raw_ostream &OS);
 
-  PreservedAnalyses run(Module &M, ModuleAnalysisManager &AM);
+  PreservedAnalyses run(Module &M, AnalysisManager &AM);
 };
 
 /// A pass which prints the call graph as a DOT file to a \c raw_ostream.
@@ -1012,7 +1010,7 @@ class LazyCallGraphDOTPrinterPass
 public:
   explicit LazyCallGraphDOTPrinterPass(raw_ostream &OS);
 
-  PreservedAnalyses run(Module &M, ModuleAnalysisManager &AM);
+  PreservedAnalyses run(Module &M, AnalysisManager &AM);
 };
 }
 

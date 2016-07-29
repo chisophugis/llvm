@@ -97,7 +97,7 @@ FunctionPass *llvm::createUnreachableBlockEliminationPass() {
 }
 
 PreservedAnalyses UnreachableBlockElimPass::run(Function &F,
-                                                FunctionAnalysisManager &AM) {
+                                                AnalysisManager &AM) {
   bool Changed = eliminateUnreachableBlock(F);
   if (!Changed)
     return PreservedAnalyses::all();

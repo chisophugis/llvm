@@ -215,13 +215,12 @@ bool LoopDeletionPass::runImpl(Loop *L, DominatorTree &DT, ScalarEvolution &SE,
   return Changed;
 }
 
-PreservedAnalyses LoopDeletionPass::run(Loop &L, AnalysisManager<Loop> &AM) {
-  auto &FAM = AM.getResult<FunctionAnalysisManagerLoopProxy>(L).getManager();
+PreservedAnalyses LoopDeletionPass::run(Loop &L, AnalysisManager &AM) {
   Function *F = L.getHeader()->getParent();
 
-  auto &DT = *FAM.getCachedResult<DominatorTreeAnalysis>(*F);
-  auto &SE = *FAM.getCachedResult<ScalarEvolutionAnalysis>(*F);
-  auto &LI = *FAM.getCachedResult<LoopAnalysis>(*F);
+  auto &DT = *AM.getCachedResult<DominatorTreeAnalysis>(*F);
+  auto &SE = *AM.getCachedResult<ScalarEvolutionAnalysis>(*F);
+  auto &LI = *AM.getCachedResult<LoopAnalysis>(*F);
 
   bool Changed = runImpl(&L, DT, SE, LI);
   if (!Changed)

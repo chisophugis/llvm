@@ -453,7 +453,7 @@ bool GCOVProfiler::runOnModule(Module &M) {
 }
 
 PreservedAnalyses GCOVProfilerPass::run(Module &M,
-                                        AnalysisManager<Module> &AM) {
+                                        AnalysisManager &AM) {
 
   GCOVProfiler Profiler(GCOVOpts);
 

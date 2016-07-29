@@ -475,7 +475,7 @@ bool CorrelatedValuePropagation::runOnFunction(Function &F) {
 }
 
 PreservedAnalyses
-CorrelatedValuePropagationPass::run(Function &F, FunctionAnalysisManager &AM) {
+CorrelatedValuePropagationPass::run(Function &F, AnalysisManager &AM) {
 
   LazyValueInfo *LVI = &AM.getResult<LazyValueAnalysis>(F);
   bool Changed = runImpl(F, LVI);

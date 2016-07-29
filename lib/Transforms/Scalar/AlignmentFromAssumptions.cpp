@@ -428,7 +428,7 @@ bool AlignmentFromAssumptionsPass::runImpl(Function &F, AssumptionCache &AC,
 }
 
 PreservedAnalyses
-AlignmentFromAssumptionsPass::run(Function &F, FunctionAnalysisManager &AM) {
+AlignmentFromAssumptionsPass::run(Function &F, AnalysisManager &AM) {
 
   AssumptionCache &AC = AM.getResult<AssumptionAnalysis>(F);
   ScalarEvolution &SE = AM.getResult<ScalarEvolutionAnalysis>(F);

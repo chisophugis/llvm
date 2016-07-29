@@ -38,7 +38,7 @@ class MemCpyOptPass : public PassInfoMixin<MemCpyOptPass> {
 
 public:
   MemCpyOptPass() {}
-  PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
+  PreservedAnalyses run(Function &F, AnalysisManager &AM);
   // Glue for the old PM.
   bool runImpl(Function &F, MemoryDependenceResults *MD_,
                TargetLibraryInfo *TLI_,

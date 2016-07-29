@@ -129,7 +129,7 @@ Pass *llvm::createLowerGuardIntrinsicPass() {
 }
 
 PreservedAnalyses LowerGuardIntrinsicPass::run(Function &F,
-                                               FunctionAnalysisManager &AM) {
+                                               AnalysisManager &AM) {
   if (lowerGuardIntrinsic(F))
     return PreservedAnalyses::none();
 

@@ -5023,16 +5023,14 @@ bool LoopStrengthReduce::runOnLoop(Loop *L, LPPassManager & /*LPM*/) {
 }
 
 PreservedAnalyses LoopStrengthReducePass::run(Loop &L,
-                                              AnalysisManager<Loop> &AM) {
-  const auto &FAM =
-      AM.getResult<FunctionAnalysisManagerLoopProxy>(L).getManager();
+                                              AnalysisManager &AM) {
   Function *F = L.getHeader()->getParent();
 
   auto &IU = AM.getResult<IVUsersAnalysis>(L);
-  auto *SE = FAM.getCachedResult<ScalarEvolutionAnalysis>(*F);
-  auto *DT = FAM.getCachedResult<DominatorTreeAnalysis>(*F);
-  auto *LI = FAM.getCachedResult<LoopAnalysis>(*F);
-  auto *TTI = FAM.getCachedResult<TargetIRAnalysis>(*F);
+  auto *SE = AM.getCachedResult<ScalarEvolutionAnalysis>(*F);
+  auto *DT = AM.getCachedResult<DominatorTreeAnalysis>(*F);
+  auto *LI = AM.getCachedResult<LoopAnalysis>(*F);
+  auto *TTI = AM.getCachedResult<TargetIRAnalysis>(*F);
   assert((SE && DT && LI && TTI) &&
          "Analyses for Loop Strength Reduce not available");
 

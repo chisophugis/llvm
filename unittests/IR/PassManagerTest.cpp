@@ -29,7 +29,7 @@ public:
   TestFunctionAnalysis(int &Runs) : Runs(Runs) {}
 
   /// \brief Run the analysis pass over the function and return a result.
-  Result run(Function &F, FunctionAnalysisManager &AM) {
+  Result run(Function &F, AnalysisManager &AM) {
     ++Runs;
     int Count = 0;
     for (Function::iterator BBI = F.begin(), BBE = F.end(); BBI != BBE; ++BBI)
@@ -57,7 +57,7 @@ public:
 
   TestModuleAnalysis(int &Runs) : Runs(Runs) {}
 
-  Result run(Module &M, ModuleAnalysisManager &AM) {
+  Result run(Module &M, AnalysisManager &AM) {
     ++Runs;
     int Count = 0;
     for (Module::iterator I = M.begin(), E = M.end(); I != E; ++I)
@@ -77,7 +77,7 @@ char TestModuleAnalysis::PassID;
 struct TestModulePass : PassInfoMixin<TestModulePass> {
   TestModulePass(int &RunCount) : RunCount(RunCount) {}
 
-  PreservedAnalyses run(Module &M, ModuleAnalysisManager &) {
+  PreservedAnalyses run(Module &M, AnalysisManager &) {
     ++RunCount;
     return PreservedAnalyses::none();
   }
@@ -86,20 +86,20 @@ struct TestModulePass : PassInfoMixin<TestModulePass> {
 };
 
 struct TestPreservingModulePass : PassInfoMixin<TestPreservingModulePass> {
-  PreservedAnalyses run(Module &M, ModuleAnalysisManager &) {
+  PreservedAnalyses run(Module &M, AnalysisManager &) {
     return PreservedAnalyses::all();
   }
 };
 
 struct TestMinPreservingModulePass
     : PassInfoMixin<TestMinPreservingModulePass> {
-  PreservedAnalyses run(Module &M, ModuleAnalysisManager &AM) {
+  PreservedAnalyses run(Module &M, AnalysisManager &AM) {
     PreservedAnalyses PA;
 
     // Force running an analysis.
     (void)AM.getResult<TestModuleAnalysis>(M);
 
-    PA.preserve<FunctionAnalysisManagerModuleProxy>();
+    PA.preserve<TestFunctionAnalysis>();
     return PA;
   }
 };
@@ -112,13 +112,11 @@ struct TestFunctionPass : PassInfoMixin<TestFunctionPass> {
         AnalyzedFunctionCount(AnalyzedFunctionCount),
         OnlyUseCachedResults(OnlyUseCachedResults) {}
 
-  PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM) {
+  PreservedAnalyses run(Function &F, AnalysisManager &AM) {
     ++RunCount;
 
-    const ModuleAnalysisManager &MAM =
-        AM.getResult<ModuleAnalysisManagerFunctionProxy>(F).getManager();
     if (TestModuleAnalysis::Result *TMA =
-            MAM.getCachedResult<TestModuleAnalysis>(*F.getParent()))
+            AM.getCachedResult<TestModuleAnalysis>(*F.getParent()))
       AnalyzedFunctionCount += TMA->FunctionCount;
 
     if (OnlyUseCachedResults) {
@@ -147,7 +145,7 @@ struct TestInvalidationFunctionPass
     : PassInfoMixin<TestInvalidationFunctionPass> {
   TestInvalidationFunctionPass(StringRef FunctionName) : Name(FunctionName) {}
 
-  PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM) {
+  PreservedAnalyses run(Function &F, AnalysisManager &AM) {
     return F.getName() == Name ? PreservedAnalyses::none()
                                : PreservedAnalyses::all();
   }
@@ -215,21 +213,16 @@ TEST_F(PassManagerTest, BasicPreservedAnalyses) {
 }
 
 TEST_F(PassManagerTest, Basic) {
-  FunctionAnalysisManager FAM;
+  AnalysisManager AM(true);
   int FunctionAnalysisRuns = 0;
-  FAM.registerPass<Function>(
+  AM.registerPass<Function>(
       [&] { return TestFunctionAnalysis(FunctionAnalysisRuns); });
 
-  ModuleAnalysisManager MAM;
   int ModuleAnalysisRuns = 0;
-  MAM.registerPass<Module>(
+  AM.registerPass<Module>(
       [&] { return TestModuleAnalysis(ModuleAnalysisRuns); });
-  MAM.registerPass<Module>(
-      [&] { return FunctionAnalysisManagerModuleProxy(FAM); });
-  FAM.registerPass<Function>(
-      [&] { return ModuleAnalysisManagerFunctionProxy(MAM); });
 
-  ModulePassManager MPM;
+  ModulePassManager MPM(true);
 
   // Count the runs over a Function.
   int FunctionPassRunCount1 = 0;
@@ -237,11 +230,11 @@ TEST_F(PassManagerTest, Basic) {
   int AnalyzedFunctionCount1 = 0;
   {
     // Pointless scoped copy to test move assignment.
-    ModulePassManager NestedMPM;
-    FunctionPassManager FPM;
+    ModulePassManager NestedMPM(true);
+    FunctionPassManager FPM(true);
     {
       // Pointless scope to test move assignment.
-      FunctionPassManager NestedFPM;
+      FunctionPassManager NestedFPM(true);
       NestedFPM.addPass(TestFunctionPass(
           FunctionPassRunCount1, AnalyzedInstrCount1, AnalyzedFunctionCount1));
       FPM = std::move(NestedFPM);
@@ -259,7 +252,7 @@ TEST_F(PassManagerTest, Basic) {
   int AnalyzedInstrCount2 = 0;
   int AnalyzedFunctionCount2 = 0;
   {
-    FunctionPassManager FPM;
+    FunctionPassManager FPM(true);
     FPM.addPass(TestFunctionPass(FunctionPassRunCount2, AnalyzedInstrCount2,
                                  AnalyzedFunctionCount2));
     MPM.addPass(createModuleToFunctionPassAdaptor(std::move(FPM)));
@@ -272,7 +265,7 @@ TEST_F(PassManagerTest, Basic) {
   int AnalyzedInstrCount3 = 0;
   int AnalyzedFunctionCount3 = 0;
   {
-    FunctionPassManager FPM;
+    FunctionPassManager FPM(true);
     FPM.addPass(TestFunctionPass(FunctionPassRunCount3, AnalyzedInstrCount3,
                                  AnalyzedFunctionCount3));
     FPM.addPass(TestInvalidationFunctionPass("f"));
@@ -285,7 +278,7 @@ TEST_F(PassManagerTest, Basic) {
   int AnalyzedInstrCount4 = 0;
   int AnalyzedFunctionCount4 = 0;
   {
-    FunctionPassManager FPM;
+    FunctionPassManager FPM(true);
     FPM.addPass(TestFunctionPass(FunctionPassRunCount4, AnalyzedInstrCount4,
                                  AnalyzedFunctionCount4));
     MPM.addPass(createModuleToFunctionPassAdaptor(std::move(FPM)));
@@ -296,7 +289,7 @@ TEST_F(PassManagerTest, Basic) {
   int AnalyzedInstrCount5 = 0;
   int AnalyzedFunctionCount5 = 0;
   {
-    FunctionPassManager FPM;
+    FunctionPassManager FPM(true);
     FPM.addPass(TestInvalidationFunctionPass("f"));
     FPM.addPass(TestFunctionPass(FunctionPassRunCount5, AnalyzedInstrCount5,
                                  AnalyzedFunctionCount5,
@@ -304,7 +297,7 @@ TEST_F(PassManagerTest, Basic) {
     MPM.addPass(createModuleToFunctionPassAdaptor(std::move(FPM)));
   }
 
-  MPM.run(*M, MAM);
+  MPM.run(*M, AM);
 
   // Validate module pass counters.
   EXPECT_EQ(1, ModulePassRunCount);

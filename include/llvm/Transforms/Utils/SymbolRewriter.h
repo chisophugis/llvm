@@ -123,7 +123,7 @@ public:
   RewriteSymbolPass(RewriteSymbolPass &&Other)
       : Descriptors(std::move(Other.Descriptors)) {}
 
-  PreservedAnalyses run(Module &M, ModuleAnalysisManager &AM);
+  PreservedAnalyses run(Module &M, AnalysisManager &AM);
 
   // Glue for old PM
   bool runImpl(Module &M);

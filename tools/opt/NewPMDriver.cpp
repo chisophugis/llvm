@@ -63,20 +63,16 @@ bool llvm::runPassPipeline(StringRef Arg0, LLVMContext &Context, Module &M,
     return false;
   }
 
-  LoopAnalysisManager LAM(DebugPM);
-  FunctionAnalysisManager FAM(DebugPM);
-  CGSCCAnalysisManager CGAM(DebugPM);
-  ModuleAnalysisManager MAM(DebugPM);
+  AnalysisManager AM(DebugPM);
 
   // Register the AA manager first so that our version is the one used.
-  FAM.registerPass<Function>([&] { return std::move(AA); });
+  AM.registerPass<Function>([&] { return std::move(AA); });
 
   // Register all the basic analyses with the managers.
-  PB.registerModuleAnalyses(MAM);
-  PB.registerCGSCCAnalyses(CGAM);
-  PB.registerFunctionAnalyses(FAM);
-  PB.registerLoopAnalyses(LAM);
-  PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
+  PB.registerModuleAnalyses(AM);
+  PB.registerCGSCCAnalyses(AM);
+  PB.registerFunctionAnalyses(AM);
+  PB.registerLoopAnalyses(AM);
 
   ModulePassManager MPM(DebugPM);
   if (VK > VK_NoVerifier)
@@ -109,7 +105,7 @@ bool llvm::runPassPipeline(StringRef Arg0, LLVMContext &Context, Module &M,
   cl::PrintOptionValues();
 
   // Now that we have all of the passes ready, run them.
-  MPM.run(M, MAM);
+  MPM.run(M, AM);
 
   // Declare success.
   if (OK != OK_NoOutput)

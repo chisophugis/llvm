@@ -301,7 +301,7 @@ void DominatorTree::verifyDomTree() const {
 //===----------------------------------------------------------------------===//
 
 DominatorTree DominatorTreeAnalysis::run(Function &F,
-                                         AnalysisManager<Function> &) {
+                                         AnalysisManager &) {
   DominatorTree DT;
   DT.recalculate(F);
   return DT;
@@ -312,7 +312,7 @@ char DominatorTreeAnalysis::PassID;
 DominatorTreePrinterPass::DominatorTreePrinterPass(raw_ostream &OS) : OS(OS) {}
 
 PreservedAnalyses DominatorTreePrinterPass::run(Function &F,
-                                                FunctionAnalysisManager &AM) {
+                                                AnalysisManager &AM) {
   OS << "DominatorTree for function: " << F.getName() << "\n";
   AM.getResult<DominatorTreeAnalysis>(F).print(OS);
 
@@ -320,7 +320,7 @@ PreservedAnalyses DominatorTreePrinterPass::run(Function &F,
 }
 
 PreservedAnalyses DominatorTreeVerifierPass::run(Function &F,
-                                                 FunctionAnalysisManager &AM) {
+                                                 AnalysisManager &AM) {
   AM.getResult<DominatorTreeAnalysis>(F).verifyDomTree();
 
   return PreservedAnalyses::all();

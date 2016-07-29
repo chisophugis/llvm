@@ -27,7 +27,7 @@ namespace llvm {
 
 struct AlignmentFromAssumptionsPass
     : public PassInfoMixin<AlignmentFromAssumptionsPass> {
-  PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
+  PreservedAnalyses run(Function &F, AnalysisManager &AM);
 
   // Glue for old PM.
   bool runImpl(Function &F, AssumptionCache &AC, ScalarEvolution *SE_,

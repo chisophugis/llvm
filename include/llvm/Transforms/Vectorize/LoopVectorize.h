@@ -89,7 +89,7 @@ struct LoopVectorizePass : public PassInfoMixin<LoopVectorizePass> {
 
   BlockFrequency ColdEntryFreq;
 
-  PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
+  PreservedAnalyses run(Function &F, AnalysisManager &AM);
 
   // Shim for old PM.
   bool runImpl(Function &F, ScalarEvolution &SE_, LoopInfo &LI_,

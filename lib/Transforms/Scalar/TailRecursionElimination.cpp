@@ -826,7 +826,7 @@ FunctionPass *llvm::createTailCallEliminationPass() {
 }
 
 PreservedAnalyses TailCallElimPass::run(Function &F,
-                                        FunctionAnalysisManager &AM) {
+                                        AnalysisManager &AM) {
 
   TargetTransformInfo &TTI = AM.getResult<TargetIRAnalysis>(F);
 

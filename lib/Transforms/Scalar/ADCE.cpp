@@ -162,7 +162,7 @@ bool AgggressiveDeadCodeElimination::aggressiveDCE() {
   return !Worklist.empty();
 }
 
-PreservedAnalyses ADCEPass::run(Function &F, FunctionAnalysisManager &) {
+PreservedAnalyses ADCEPass::run(Function &F, AnalysisManager &) {
   if (!AgggressiveDeadCodeElimination(F).aggressiveDCE())
     return PreservedAnalyses::all();
 

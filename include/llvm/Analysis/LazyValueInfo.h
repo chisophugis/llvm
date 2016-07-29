@@ -106,7 +106,7 @@ public:
 class LazyValueAnalysis : public AnalysisInfoMixin<LazyValueAnalysis> {
 public:
   typedef LazyValueInfo Result;
-  Result run(Function &F, FunctionAnalysisManager &FAM);
+  Result run(Function &F, AnalysisManager &AM);
 
 private:
   static char PassID;

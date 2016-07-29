@@ -1129,7 +1129,7 @@ static bool eliminateDeadStores(Function &F, AliasAnalysis *AA,
 //===----------------------------------------------------------------------===//
 // DSE Pass
 //===----------------------------------------------------------------------===//
-PreservedAnalyses DSEPass::run(Function &F, FunctionAnalysisManager &AM) {
+PreservedAnalyses DSEPass::run(Function &F, AnalysisManager &AM) {
   AliasAnalysis *AA = &AM.getResult<AAManager>(F);
   DominatorTree *DT = &AM.getResult<DominatorTreeAnalysis>(F);
   MemoryDependenceResults *MD = &AM.getResult<MemoryDependenceAnalysis>(F);

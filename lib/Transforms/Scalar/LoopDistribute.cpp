@@ -942,7 +942,7 @@ private:
 } // anonymous namespace
 
 PreservedAnalyses LoopDistributePass::run(Function &F,
-                                          FunctionAnalysisManager &AM) {
+                                          AnalysisManager &AM) {
   // FIXME: This does not currently match the behavior from the old PM.
   // ProcessAllLoops with the old PM defaults to true when invoked from opt and
   // false when invoked from the optimization pipeline.
@@ -955,10 +955,9 @@ PreservedAnalyses LoopDistributePass::run(Function &F,
   auto &SE = AM.getResult<ScalarEvolutionAnalysis>(F);
   auto &ORE = AM.getResult<OptimizationRemarkEmitterAnalysis>(F);
 
-  auto &LAM = AM.getResult<LoopAnalysisManagerFunctionProxy>(F).getManager();
   std::function<const LoopAccessInfo &(Loop &)> GetLAA =
       [&](Loop &L) -> const LoopAccessInfo & {
-    return LAM.getResult<LoopAccessAnalysis>(L);
+    return AM.getResult<LoopAccessAnalysis>(L);
   };
 
   bool Changed = runImpl(F, &LI, &DT, &SE, &ORE, GetLAA, ProcessAllLoops);

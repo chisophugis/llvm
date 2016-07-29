@@ -210,12 +210,10 @@ ModulePass *llvm::createPartialInliningPass() {
   return new PartialInlinerLegacyPass();
 }
 
-PreservedAnalyses PartialInlinerPass::run(Module &M,
-                                          ModuleAnalysisManager &AM) {
-  auto &FAM = AM.getResult<FunctionAnalysisManagerModuleProxy>(M).getManager();
+PreservedAnalyses PartialInlinerPass::run(Module &M, AnalysisManager &AM) {
   std::function<AssumptionCache &(Function &)> GetAssumptionCache =
-      [&FAM](Function &F) -> AssumptionCache & {
-    return FAM.getResult<AssumptionAnalysis>(F);
+      [&](Function &F) -> AssumptionCache & {
+    return AM.getResult<AssumptionAnalysis>(F);
   };
   InlineFunctionInfo IFI(nullptr, &GetAssumptionCache);
   if (PartialInlinerImpl(IFI).run(M))

@@ -34,7 +34,7 @@ public:
 
   TestModuleAnalysis(int &Runs) : Runs(Runs) {}
 
-  Result run(Module &M, ModuleAnalysisManager &AM) {
+  Result run(Module &M, AnalysisManager &AM) {
     ++Runs;
     return Result(M.size());
   }
@@ -59,7 +59,7 @@ public:
 
   TestSCCAnalysis(int &Runs) : Runs(Runs) {}
 
-  Result run(LazyCallGraph::SCC &C, CGSCCAnalysisManager &AM) {
+  Result run(LazyCallGraph::SCC &C, AnalysisManager &AM) {
     ++Runs;
     return Result(C.size());
   }
@@ -84,7 +84,7 @@ public:
 
   TestFunctionAnalysis(int &Runs) : Runs(Runs) {}
 
-  Result run(Function &F, FunctionAnalysisManager &AM) {
+  Result run(Function &F, AnalysisManager &AM) {
     ++Runs;
     int Count = 0;
     for (Instruction &I : instructions(F)) {
@@ -113,7 +113,7 @@ public:
 
   TestImmutableFunctionAnalysis(int &Runs) : Runs(Runs) {}
 
-  Result run(Function &F, FunctionAnalysisManager &AM) {
+  Result run(Function &F, AnalysisManager &AM) {
     ++Runs;
     return Result();
   }
@@ -129,7 +129,7 @@ char TestImmutableFunctionAnalysis::PassID;
 struct TestModulePass {
   TestModulePass(int &RunCount) : RunCount(RunCount) {}
 
-  PreservedAnalyses run(Module &M, ModuleAnalysisManager &AM) {
+  PreservedAnalyses run(Module &M, AnalysisManager &AM) {
     ++RunCount;
     (void)AM.getResult<TestModuleAnalysis>(M);
     return PreservedAnalyses::all();
@@ -149,15 +149,11 @@ struct TestSCCPass {
         AnalyzedModuleFunctionCount(AnalyzedModuleFunctionCount),
         OnlyUseCachedResults(OnlyUseCachedResults) {}
 
-  PreservedAnalyses run(LazyCallGraph::SCC &C, CGSCCAnalysisManager &AM) {
+  PreservedAnalyses run(LazyCallGraph::SCC &C, AnalysisManager &AM) {
     ++RunCount;
 
-    const ModuleAnalysisManager &MAM =
-        AM.getResult<ModuleAnalysisManagerCGSCCProxy>(C).getManager();
-    FunctionAnalysisManager &FAM =
-        AM.getResult<FunctionAnalysisManagerCGSCCProxy>(C).getManager();
     if (TestModuleAnalysis::Result *TMA =
-            MAM.getCachedResult<TestModuleAnalysis>(
+            AM.getCachedResult<TestModuleAnalysis>(
                 *C.begin()->getFunction().getParent()))
       AnalyzedModuleFunctionCount += TMA->FunctionCount;
 
@@ -167,7 +163,7 @@ struct TestSCCPass {
         AnalyzedSCCFunctionCount += AR->FunctionCount;
       for (LazyCallGraph::Node &N : C)
         if (TestFunctionAnalysis::Result *FAR =
-                FAM.getCachedResult<TestFunctionAnalysis>(N.getFunction()))
+                AM.getCachedResult<TestFunctionAnalysis>(N.getFunction()))
           AnalyzedInstrCount += FAR->InstructionCount;
     } else {
       // Typical path just runs the analysis as needed.
@@ -175,11 +171,11 @@ struct TestSCCPass {
       AnalyzedSCCFunctionCount += AR.FunctionCount;
       for (LazyCallGraph::Node &N : C) {
         TestFunctionAnalysis::Result &FAR =
-            FAM.getResult<TestFunctionAnalysis>(N.getFunction());
+            AM.getResult<TestFunctionAnalysis>(N.getFunction());
         AnalyzedInstrCount += FAR.InstructionCount;
 
         // Just ensure we get the immutable results.
-        (void)FAM.getResult<TestImmutableFunctionAnalysis>(N.getFunction());
+        (void)AM.getResult<TestImmutableFunctionAnalysis>(N.getFunction());
       }
     }
 
@@ -198,7 +194,7 @@ struct TestSCCPass {
 struct TestFunctionPass {
   TestFunctionPass(int &RunCount) : RunCount(RunCount) {}
 
-  PreservedAnalyses run(Function &F, AnalysisManager<Function> &) {
+  PreservedAnalyses run(Function &F, AnalysisManager &) {
     ++RunCount;
     return PreservedAnalyses::none();
   }
@@ -250,38 +246,23 @@ TEST(CGSCCPassManagerTest, Basic) {
                    "entry:\n"
                    "  ret void\n"
                    "}\n");
-  FunctionAnalysisManager FAM(/*DebugLogging*/ true);
+  AnalysisManager AM(/*DebugLogging*/ true);
   int FunctionAnalysisRuns = 0;
-  FAM.registerPass<Function>(
+  AM.registerPass<Function>(
       [&] { return TestFunctionAnalysis(FunctionAnalysisRuns); });
   int ImmutableFunctionAnalysisRuns = 0;
-  FAM.registerPass<Function>([&] {
+  AM.registerPass<Function>([&] {
     return TestImmutableFunctionAnalysis(ImmutableFunctionAnalysisRuns);
   });
 
-  CGSCCAnalysisManager CGAM(/*DebugLogging*/ true);
   int SCCAnalysisRuns = 0;
-  CGAM.registerPass<LazyCallGraph::SCC>(
+  AM.registerPass<LazyCallGraph::SCC>(
       [&] { return TestSCCAnalysis(SCCAnalysisRuns); });
 
-  ModuleAnalysisManager MAM(/*DebugLogging*/ true);
   int ModuleAnalysisRuns = 0;
-  MAM.registerPass<Module>([&] { return LazyCallGraphAnalysis(); });
-  MAM.registerPass<Module>(
+  AM.registerPass<Module>([&] { return LazyCallGraphAnalysis(); });
+  AM.registerPass<Module>(
       [&] { return TestModuleAnalysis(ModuleAnalysisRuns); });
-
-  MAM.registerPass<Module>(
-      [&] { return FunctionAnalysisManagerModuleProxy(FAM); });
-  MAM.registerPass<Module>(
-      [&] { return CGSCCAnalysisManagerModuleProxy(CGAM); });
-  CGAM.registerPass<LazyCallGraph::SCC>(
-      [&] { return FunctionAnalysisManagerCGSCCProxy(FAM); });
-  CGAM.registerPass<LazyCallGraph::SCC>(
-      [&] { return ModuleAnalysisManagerCGSCCProxy(MAM); });
-  FAM.registerPass<Function>(
-      [&] { return CGSCCAnalysisManagerFunctionProxy(CGAM); });
-  FAM.registerPass<Function>(
-      [&] { return ModuleAnalysisManagerFunctionProxy(MAM); });
 
   ModulePassManager MPM(/*DebugLogging*/ true);
   int ModulePassRunCount1 = 0;
@@ -302,7 +283,7 @@ TEST(CGSCCPassManagerTest, Basic) {
   CGPM1.addPass(createCGSCCToFunctionPassAdaptor(std::move(FPM1)));
   MPM.addPass(createModuleToPostOrderCGSCCPassAdaptor(std::move(CGPM1)));
 
-  MPM.run(*M, MAM);
+  MPM.run(*M, AM);
 
   EXPECT_EQ(1, ModulePassRunCount1);
 

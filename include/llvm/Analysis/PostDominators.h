@@ -48,7 +48,7 @@ public:
 
   /// \brief Run the analysis pass over a function and produce a post dominator
   ///        tree.
-  PostDominatorTree run(Function &F, FunctionAnalysisManager &);
+  PostDominatorTree run(Function &F, AnalysisManager &);
 };
 
 /// \brief Printer pass for the \c PostDominatorTree.
@@ -58,7 +58,7 @@ class PostDominatorTreePrinterPass
 
 public:
   explicit PostDominatorTreePrinterPass(raw_ostream &OS);
-  PreservedAnalyses run(Function &F, AnalysisManager<Function> &AM);
+  PreservedAnalyses run(Function &F, AnalysisManager &AM);
 };
 
 struct PostDominatorTreeWrapperPass : public FunctionPass {

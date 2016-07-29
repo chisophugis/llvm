@@ -21,7 +21,7 @@ struct LoopUnrollPass : public PassInfoMixin<LoopUnrollPass> {
   Optional<bool> ProvidedAllowPartial;
   Optional<bool> ProvidedRuntime;
 
-  PreservedAnalyses run(Loop &L, AnalysisManager<Loop> &AM);
+  PreservedAnalyses run(Loop &L, AnalysisManager &AM);
 };
 } // end namespace llvm
 

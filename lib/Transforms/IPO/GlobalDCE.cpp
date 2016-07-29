@@ -50,8 +50,8 @@ namespace {
       if (skipModule(M))
         return false;
 
-      ModuleAnalysisManager DummyMAM;
-      auto PA = Impl.run(M, DummyMAM);
+      AnalysisManager DummyAM;
+      auto PA = Impl.run(M, DummyAM);
       return !PA.areAllPreserved();
     }
 
@@ -78,7 +78,7 @@ static bool isEmptyFunction(Function *F) {
   return RI.getReturnValue() == nullptr;
 }
 
-PreservedAnalyses GlobalDCEPass::run(Module &M, ModuleAnalysisManager &) {
+PreservedAnalyses GlobalDCEPass::run(Module &M, AnalysisManager &) {
   bool Changed = false;
 
   // Remove empty functions from the global ctors list.

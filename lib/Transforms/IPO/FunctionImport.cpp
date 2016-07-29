@@ -785,7 +785,7 @@ public:
 } // anonymous namespace
 
 PreservedAnalyses FunctionImportPass::run(Module &M,
-                                          AnalysisManager<Module> &AM) {
+                                          AnalysisManager &AM) {
   if (!doImportingForModule(M, Index))
     return PreservedAnalyses::all();
 

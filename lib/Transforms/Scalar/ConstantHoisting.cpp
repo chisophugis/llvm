@@ -617,7 +617,7 @@ bool ConstantHoistingPass::runImpl(Function &Fn, TargetTransformInfo &TTI,
 }
 
 PreservedAnalyses ConstantHoistingPass::run(Function &F,
-                                            FunctionAnalysisManager &AM) {
+                                            AnalysisManager &AM) {
   auto &DT = AM.getResult<DominatorTreeAnalysis>(F);
   auto &TTI = AM.getResult<TargetIRAnalysis>(F);
   if (!runImpl(F, TTI, DT, F.getEntryBlock()))

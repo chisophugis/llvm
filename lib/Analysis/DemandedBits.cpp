@@ -388,15 +388,14 @@ FunctionPass *llvm::createDemandedBitsWrapperPass() {
 
 char DemandedBitsAnalysis::PassID;
 
-DemandedBits DemandedBitsAnalysis::run(Function &F,
-                                             AnalysisManager<Function> &AM) {
+DemandedBits DemandedBitsAnalysis::run(Function &F, AnalysisManager &AM) {
   auto &AC = AM.getResult<AssumptionAnalysis>(F);
   auto &DT = AM.getResult<DominatorTreeAnalysis>(F);
   return DemandedBits(F, AC, DT);
 }
 
 PreservedAnalyses DemandedBitsPrinterPass::run(Function &F,
-                                               FunctionAnalysisManager &AM) {
+                                               AnalysisManager &AM) {
   AM.getResult<DemandedBitsAnalysis>(F).print(OS);
   return PreservedAnalyses::all();
 }

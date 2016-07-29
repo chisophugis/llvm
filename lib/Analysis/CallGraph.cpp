@@ -260,8 +260,7 @@ void CallGraphNode::replaceCallEdge(CallSite CS,
 // Provide an explicit template instantiation for the static ID.
 char CallGraphAnalysis::PassID;
 
-PreservedAnalyses CallGraphPrinterPass::run(Module &M,
-                                            AnalysisManager<Module> &AM) {
+PreservedAnalyses CallGraphPrinterPass::run(Module &M, AnalysisManager &AM) {
   AM.getResult<CallGraphAnalysis>(M).print(OS);
   return PreservedAnalyses::all();
 }

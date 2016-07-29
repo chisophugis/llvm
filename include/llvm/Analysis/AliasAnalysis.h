@@ -878,7 +878,7 @@ public:
     ResultGetters.push_back(&getModuleAAResultImpl<AnalysisT>);
   }
 
-  Result run(Function &F, AnalysisManager<Function> &AM) {
+  Result run(Function &F, AnalysisManager &AM) {
     Result R(AM.getResult<TargetLibraryAnalysis>(F));
     for (auto &Getter : ResultGetters)
       (*Getter)(F, AM, R);
@@ -889,23 +889,20 @@ private:
   friend AnalysisInfoMixin<AAManager>;
   static char PassID;
 
-  SmallVector<void (*)(Function &F, AnalysisManager<Function> &AM,
-                       AAResults &AAResults),
-              4> ResultGetters;
+  SmallVector<void (*)(Function &F, AnalysisManager &AM, AAResults &AAResults),
+              4>
+      ResultGetters;
 
   template <typename AnalysisT>
-  static void getFunctionAAResultImpl(Function &F,
-                                      AnalysisManager<Function> &AM,
+  static void getFunctionAAResultImpl(Function &F, AnalysisManager &AM,
                                       AAResults &AAResults) {
     AAResults.addAAResult(AM.template getResult<AnalysisT>(F));
   }
 
   template <typename AnalysisT>
-  static void getModuleAAResultImpl(Function &F, AnalysisManager<Function> &AM,
+  static void getModuleAAResultImpl(Function &F, AnalysisManager &AM,
                                     AAResults &AAResults) {
-    auto &MAM =
-        AM.getResult<ModuleAnalysisManagerFunctionProxy>(F).getManager();
-    if (auto *R = MAM.template getCachedResult<AnalysisT>(*F.getParent()))
+    if (auto *R = AM.template getCachedResult<AnalysisT>(*F.getParent()))
       AAResults.addAAResult(*R);
   }
 };

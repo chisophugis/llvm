@@ -69,7 +69,7 @@ static bool bitTrackingDCE(Function &F, DemandedBits &DB) {
   return Changed;
 }
 
-PreservedAnalyses BDCEPass::run(Function &F, FunctionAnalysisManager &AM) {
+PreservedAnalyses BDCEPass::run(Function &F, AnalysisManager &AM) {
   auto &DB = AM.getResult<DemandedBitsAnalysis>(F);
   if (!bitTrackingDCE(F, DB))
     return PreservedAnalyses::all();

@@ -139,7 +139,7 @@ static bool lowerAtomics(Function &F) {
   return Changed;
 }
 
-PreservedAnalyses LowerAtomicPass::run(Function &F, FunctionAnalysisManager &) {
+PreservedAnalyses LowerAtomicPass::run(Function &F, AnalysisManager &) {
   if (lowerAtomics(F))
     return PreservedAnalyses::none();
   return PreservedAnalyses::all();
@@ -157,8 +157,8 @@ public:
   bool runOnFunction(Function &F) override {
     if (skipFunction(F))
       return false;
-    FunctionAnalysisManager DummyFAM;
-    auto PA = Impl.run(F, DummyFAM);
+    AnalysisManager DummyAM;
+    auto PA = Impl.run(F, DummyAM);
     return !PA.areAllPreserved();
   }
 

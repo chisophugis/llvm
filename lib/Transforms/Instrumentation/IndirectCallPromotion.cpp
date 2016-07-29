@@ -653,7 +653,7 @@ bool PGOIndirectCallPromotionLegacyPass::runOnModule(Module &M) {
   return promoteIndirectCalls(M, InLTO | ICPLTOMode);
 }
 
-PreservedAnalyses PGOIndirectCallPromotion::run(Module &M, AnalysisManager<Module> &AM) {
+PreservedAnalyses PGOIndirectCallPromotion::run(Module &M, AnalysisManager &AM) {
   if (!promoteIndirectCalls(M, InLTO | ICPLTOMode))
     return PreservedAnalyses::all();
 

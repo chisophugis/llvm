@@ -1485,10 +1485,10 @@ void LazyValueInfo::releaseMemory() {
 
 void LazyValueInfoWrapperPass::releaseMemory() { Info.releaseMemory(); }
 
-LazyValueInfo LazyValueAnalysis::run(Function &F, FunctionAnalysisManager &FAM) {
-  auto &AC = FAM.getResult<AssumptionAnalysis>(F);
-  auto &TLI = FAM.getResult<TargetLibraryAnalysis>(F);
-  auto *DT = FAM.getCachedResult<DominatorTreeAnalysis>(F);
+LazyValueInfo LazyValueAnalysis::run(Function &F, AnalysisManager &AM) {
+  auto &AC = AM.getResult<AssumptionAnalysis>(F);
+  auto &TLI = AM.getResult<TargetLibraryAnalysis>(F);
+  auto *DT = AM.getCachedResult<DominatorTreeAnalysis>(F);
 
   return LazyValueInfo(&AC, &TLI, DT);
 }

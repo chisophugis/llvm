@@ -24,7 +24,7 @@ namespace llvm {
 /// Performs Loop Idiom Recognize Pass.
 class LoopIdiomRecognizePass : public PassInfoMixin<LoopIdiomRecognizePass> {
 public:
-  PreservedAnalyses run(Loop &L, AnalysisManager<Loop> &AM);
+  PreservedAnalyses run(Loop &L, AnalysisManager &AM);
 };
 } // end namespace llvm
 

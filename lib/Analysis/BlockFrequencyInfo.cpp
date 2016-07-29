@@ -257,15 +257,15 @@ bool BlockFrequencyInfoWrapperPass::runOnFunction(Function &F) {
 
 char BlockFrequencyAnalysis::PassID;
 BlockFrequencyInfo BlockFrequencyAnalysis::run(Function &F,
-                                               AnalysisManager<Function> &AM) {
+                                               AnalysisManager &AM) {
   BlockFrequencyInfo BFI;
   BFI.calculate(F, AM.getResult<BranchProbabilityAnalysis>(F),
                 AM.getResult<LoopAnalysis>(F));
   return BFI;
 }
 
-PreservedAnalyses
-BlockFrequencyPrinterPass::run(Function &F, AnalysisManager<Function> &AM) {
+PreservedAnalyses BlockFrequencyPrinterPass::run(Function &F,
+                                                 AnalysisManager &AM) {
   OS << "Printing analysis results of BFI for function "
      << "'" << F.getName() << "':"
      << "\n";

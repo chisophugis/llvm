@@ -25,7 +25,7 @@ namespace llvm {
 /// Performs basic CFG simplifications to assist other loop passes.
 class LoopSimplifyCFGPass : public PassInfoMixin<LoopSimplifyCFGPass> {
 public:
-  PreservedAnalyses run(Loop &L, AnalysisManager<Loop> &AM);
+  PreservedAnalyses run(Loop &L, AnalysisManager &AM);
 };
 } // end namespace llvm
 

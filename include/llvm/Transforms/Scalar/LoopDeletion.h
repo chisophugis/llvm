@@ -23,7 +23,7 @@ namespace llvm {
 class LoopDeletionPass : public PassInfoMixin<LoopDeletionPass> {
 public:
   LoopDeletionPass() {}
-  PreservedAnalyses run(Loop &L, AnalysisManager<Loop> &AM);
+  PreservedAnalyses run(Loop &L, AnalysisManager &AM);
   bool runImpl(Loop *L, DominatorTree &DT, ScalarEvolution &SE,
               LoopInfo &loopInfo);
 

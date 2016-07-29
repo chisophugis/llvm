@@ -85,7 +85,7 @@ ModulePass *createPreISelIntrinsicLoweringPass() {
 }
 
 PreservedAnalyses PreISelIntrinsicLoweringPass::run(Module &M,
-                                                    ModuleAnalysisManager &AM) {
+                                                    AnalysisManager &AM) {
   if (!lowerIntrinsics(M))
     return PreservedAnalyses::all();
   else

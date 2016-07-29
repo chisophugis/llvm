@@ -135,7 +135,7 @@ namespace {
 
 /// \brief No-op module pass which does nothing.
 struct NoOpModulePass {
-  PreservedAnalyses run(Module &M, AnalysisManager<Module> &) {
+  PreservedAnalyses run(Module &M, AnalysisManager &) {
     return PreservedAnalyses::all();
   }
   static StringRef name() { return "NoOpModulePass"; }
@@ -148,14 +148,14 @@ class NoOpModuleAnalysis : public AnalysisInfoMixin<NoOpModuleAnalysis> {
 
 public:
   struct Result {};
-  Result run(Module &, AnalysisManager<Module> &) { return Result(); }
+  Result run(Module &, AnalysisManager &) { return Result(); }
   static StringRef name() { return "NoOpModuleAnalysis"; }
 };
 
 /// \brief No-op CGSCC pass which does nothing.
 struct NoOpCGSCCPass {
   PreservedAnalyses run(LazyCallGraph::SCC &C,
-                        AnalysisManager<LazyCallGraph::SCC> &) {
+                        AnalysisManager &) {
     return PreservedAnalyses::all();
   }
   static StringRef name() { return "NoOpCGSCCPass"; }
@@ -168,7 +168,7 @@ class NoOpCGSCCAnalysis : public AnalysisInfoMixin<NoOpCGSCCAnalysis> {
 
 public:
   struct Result {};
-  Result run(LazyCallGraph::SCC &, AnalysisManager<LazyCallGraph::SCC> &) {
+  Result run(LazyCallGraph::SCC &, AnalysisManager &) {
     return Result();
   }
   static StringRef name() { return "NoOpCGSCCAnalysis"; }
@@ -176,7 +176,7 @@ public:
 
 /// \brief No-op function pass which does nothing.
 struct NoOpFunctionPass {
-  PreservedAnalyses run(Function &F, AnalysisManager<Function> &) {
+  PreservedAnalyses run(Function &F, AnalysisManager &) {
     return PreservedAnalyses::all();
   }
   static StringRef name() { return "NoOpFunctionPass"; }
@@ -189,13 +189,13 @@ class NoOpFunctionAnalysis : public AnalysisInfoMixin<NoOpFunctionAnalysis> {
 
 public:
   struct Result {};
-  Result run(Function &, AnalysisManager<Function> &) { return Result(); }
+  Result run(Function &, AnalysisManager &) { return Result(); }
   static StringRef name() { return "NoOpFunctionAnalysis"; }
 };
 
 /// \brief No-op loop pass which does nothing.
 struct NoOpLoopPass {
-  PreservedAnalyses run(Loop &L, AnalysisManager<Loop> &) {
+  PreservedAnalyses run(Loop &L, AnalysisManager &) {
     return PreservedAnalyses::all();
   }
   static StringRef name() { return "NoOpLoopPass"; }
@@ -208,7 +208,7 @@ class NoOpLoopAnalysis : public AnalysisInfoMixin<NoOpLoopAnalysis> {
 
 public:
   struct Result {};
-  Result run(Loop &, AnalysisManager<Loop> &) { return Result(); }
+  Result run(Loop &, AnalysisManager &) { return Result(); }
   static StringRef name() { return "NoOpLoopAnalysis"; }
 };
 
@@ -219,27 +219,27 @@ char NoOpLoopAnalysis::PassID;
 
 } // End anonymous namespace.
 
-void PassBuilder::registerModuleAnalyses(ModuleAnalysisManager &MAM) {
+void PassBuilder::registerModuleAnalyses(AnalysisManager &AM) {
 #define MODULE_ANALYSIS(NAME, CREATE_PASS)                                     \
-  MAM.registerPass<Module>([&] { return CREATE_PASS; });
+  AM.registerPass<Module>([&] { return CREATE_PASS; });
 #include "PassRegistry.def"
 }
 
-void PassBuilder::registerCGSCCAnalyses(CGSCCAnalysisManager &CGAM) {
+void PassBuilder::registerCGSCCAnalyses(AnalysisManager &AM) {
 #define CGSCC_ANALYSIS(NAME, CREATE_PASS)                                      \
-  CGAM.registerPass<LazyCallGraph::SCC>([&] { return CREATE_PASS; });
+  AM.registerPass<LazyCallGraph::SCC>([&] { return CREATE_PASS; });
 #include "PassRegistry.def"
 }
 
-void PassBuilder::registerFunctionAnalyses(FunctionAnalysisManager &FAM) {
+void PassBuilder::registerFunctionAnalyses(AnalysisManager &AM) {
 #define FUNCTION_ANALYSIS(NAME, CREATE_PASS)                                   \
-  FAM.registerPass<Function>([&] { return CREATE_PASS; });
+  AM.registerPass<Function>([&] { return CREATE_PASS; });
 #include "PassRegistry.def"
 }
 
-void PassBuilder::registerLoopAnalyses(LoopAnalysisManager &LAM) {
+void PassBuilder::registerLoopAnalyses(AnalysisManager &AM) {
 #define LOOP_ANALYSIS(NAME, CREATE_PASS)                                       \
-  LAM.registerPass<Loop>([&] { return CREATE_PASS; });
+  AM.registerPass<Loop>([&] { return CREATE_PASS; });
 #include "PassRegistry.def"
 }
 
@@ -749,27 +749,6 @@ bool PassBuilder::parseCGSCCPassPipeline(CGSCCPassManager &CGPM,
     // FIXME: No verifier support for CGSCC passes!
   }
   return true;
-}
-
-void PassBuilder::crossRegisterProxies(LoopAnalysisManager &LAM,
-                                       FunctionAnalysisManager &FAM,
-                                       CGSCCAnalysisManager &CGAM,
-                                       ModuleAnalysisManager &MAM) {
-  MAM.registerPass<Module>(
-      [&] { return FunctionAnalysisManagerModuleProxy(FAM); });
-  MAM.registerPass<Module>(
-      [&] { return CGSCCAnalysisManagerModuleProxy(CGAM); });
-  CGAM.registerPass<LazyCallGraph::SCC>(
-      [&] { return FunctionAnalysisManagerCGSCCProxy(FAM); });
-  CGAM.registerPass<LazyCallGraph::SCC>(
-      [&] { return ModuleAnalysisManagerCGSCCProxy(MAM); });
-  FAM.registerPass<Function>(
-      [&] { return CGSCCAnalysisManagerFunctionProxy(CGAM); });
-  FAM.registerPass<Function>(
-      [&] { return ModuleAnalysisManagerFunctionProxy(MAM); });
-  FAM.registerPass<Function>(
-      [&] { return LoopAnalysisManagerFunctionProxy(LAM); });
-  LAM.registerPass<Loop>([&] { return FunctionAnalysisManagerLoopProxy(FAM); });
 }
 
 bool PassBuilder::parseModulePassPipeline(ModulePassManager &MPM,

@@ -928,7 +928,7 @@ template <typename T> class ArrayRef;
   class DependenceAnalysis : public AnalysisInfoMixin<DependenceAnalysis> {
   public:
     typedef DependenceInfo Result;
-    Result run(Function &F, FunctionAnalysisManager &FAM);
+    Result run(Function &F, AnalysisManager &AM);
 
   private:
     static char PassID;

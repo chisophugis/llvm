@@ -192,7 +192,7 @@ static bool mergeConstants(Module &M) {
   }
 }
 
-PreservedAnalyses ConstantMergePass::run(Module &M, ModuleAnalysisManager &) {
+PreservedAnalyses ConstantMergePass::run(Module &M, AnalysisManager &) {
   if (!mergeConstants(M))
     return PreservedAnalyses::all();
   return PreservedAnalyses::none();
