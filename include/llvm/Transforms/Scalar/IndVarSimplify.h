@@ -22,7 +22,7 @@ namespace llvm {
 
 class IndVarSimplifyPass : public PassInfoMixin<IndVarSimplifyPass> {
 public:
-  PreservedAnalyses run(Loop &L, AnalysisManager<Loop> &AM);
+  PreservedAnalyses run(Loop &L, AnalysisManager &AM);
 };
 }
 

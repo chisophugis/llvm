@@ -314,7 +314,7 @@ ModulePass *llvm::createWholeProgramDevirtPass() {
 }
 
 PreservedAnalyses WholeProgramDevirtPass::run(Module &M,
-                                              ModuleAnalysisManager &) {
+                                              AnalysisManager &) {
   if (!DevirtModule(M).run())
     return PreservedAnalyses::all();
   return PreservedAnalyses::none();

@@ -20,7 +20,6 @@
 ; RUN:     | FileCheck %s --check-prefix=CHECK-CGSCC-PASS
 ; CHECK-CGSCC-PASS: Starting llvm::Module pass manager run
 ; CHECK-CGSCC-PASS-NEXT: Running pass: ModuleToPostOrderCGSCCPassAdaptor
-; CHECK-CGSCC-PASS-NEXT: Running analysis: InnerAnalysisManagerProxy<{{.*}}>
 ; CHECK-CGSCC-PASS-NEXT: Running analysis: LazyCallGraphAnalysis
 ; CHECK-CGSCC-PASS-NEXT: Running an SCC pass across the RefSCC: [(foo)]
 ; CHECK-CGSCC-PASS-NEXT: Starting llvm::LazyCallGraph::SCC pass manager run
@@ -36,7 +35,6 @@
 ; RUN:     | FileCheck %s --check-prefix=CHECK-FUNCTION-PASS
 ; CHECK-FUNCTION-PASS: Starting llvm::Module pass manager run
 ; CHECK-FUNCTION-PASS-NEXT: Running pass: ModuleToFunctionPassAdaptor
-; CHECK-FUNCTION-PASS-NEXT: Running analysis: InnerAnalysisManagerProxy<{{.*}}>
 ; CHECK-FUNCTION-PASS-NEXT: Starting llvm::Function pass manager run
 ; CHECK-FUNCTION-PASS-NEXT: Running pass: NoOpFunctionPass
 ; CHECK-FUNCTION-PASS-NEXT: Finished llvm::Function pass manager run
@@ -66,7 +64,6 @@
 ; CHECK-FUNCTION-PRINT: Starting llvm::Module pass manager run
 ; CHECK-FUNCTION-PRINT: Running pass: VerifierPass
 ; CHECK-FUNCTION-PRINT: Running pass: ModuleToFunctionPassAdaptor
-; CHECK-FUNCTION-PRINT: Running analysis: InnerAnalysisManagerProxy<{{.*}}>
 ; CHECK-FUNCTION-PRINT: Starting llvm::Function pass manager run
 ; CHECK-FUNCTION-PRINT: Running pass: PrintFunctionPass
 ; CHECK-FUNCTION-PRINT-NOT: ModuleID
@@ -389,7 +386,6 @@
 ; RUN:     | FileCheck %s --check-prefix=CHECK-REPEAT-CGSCC-PASS
 ; CHECK-REPEAT-CGSCC-PASS: Starting llvm::Module pass manager run
 ; CHECK-REPEAT-CGSCC-PASS-NEXT: Running pass: ModuleToPostOrderCGSCCPassAdaptor
-; CHECK-REPEAT-CGSCC-PASS-NEXT: Running analysis: InnerAnalysisManagerProxy<{{.*}}>
 ; CHECK-REPEAT-CGSCC-PASS-NEXT: Running analysis: LazyCallGraphAnalysis
 ; CHECK-REPEAT-CGSCC-PASS-NEXT: Running an SCC pass across the RefSCC: [(foo)]
 ; CHECK-REPEAT-CGSCC-PASS-NEXT: Starting llvm::LazyCallGraph::SCC pass manager run
@@ -411,7 +407,6 @@
 ; RUN:     | FileCheck %s --check-prefix=CHECK-REPEAT-FUNCTION-PASS
 ; CHECK-REPEAT-FUNCTION-PASS: Starting llvm::Module pass manager run
 ; CHECK-REPEAT-FUNCTION-PASS-NEXT: Running pass: ModuleToFunctionPassAdaptor
-; CHECK-REPEAT-FUNCTION-PASS-NEXT: Running analysis: InnerAnalysisManagerProxy<{{.*}}>
 ; CHECK-REPEAT-FUNCTION-PASS-NEXT: Starting llvm::Function pass manager run
 ; CHECK-REPEAT-FUNCTION-PASS-NEXT: Running pass: RepeatedPass
 ; CHECK-REPEAT-FUNCTION-PASS-NEXT: Starting llvm::Function pass manager run
@@ -431,10 +426,8 @@
 ; RUN:     | FileCheck %s --check-prefix=CHECK-REPEAT-LOOP-PASS
 ; CHECK-REPEAT-LOOP-PASS: Starting llvm::Module pass manager run
 ; CHECK-REPEAT-LOOP-PASS-NEXT: Running pass: ModuleToFunctionPassAdaptor
-; CHECK-REPEAT-LOOP-PASS-NEXT: Running analysis: InnerAnalysisManagerProxy<{{.*}}>
 ; CHECK-REPEAT-LOOP-PASS-NEXT: Starting llvm::Function pass manager run
 ; CHECK-REPEAT-LOOP-PASS-NEXT: Running pass: FunctionToLoopPassAdaptor
-; CHECK-REPEAT-LOOP-PASS-NEXT: Running analysis: InnerAnalysisManagerProxy<{{.*}}>
 ; CHECK-REPEAT-LOOP-PASS-NEXT: Running analysis: LoopAnalysis
 ; CHECK-REPEAT-LOOP-PASS-NEXT: Running analysis: DominatorTreeAnalysis
 ; CHECK-REPEAT-LOOP-PASS-NEXT: Starting llvm::Loop pass manager run

@@ -619,18 +619,17 @@ bool LoopRotate::processLoop(Loop *L) {
 
 LoopRotatePass::LoopRotatePass() {}
 
-PreservedAnalyses LoopRotatePass::run(Loop &L, AnalysisManager<Loop> &AM) {
-  auto &FAM = AM.getResult<FunctionAnalysisManagerLoopProxy>(L).getManager();
+PreservedAnalyses LoopRotatePass::run(Loop &L, AnalysisManager &AM) {
   Function *F = L.getHeader()->getParent();
 
-  auto *LI = FAM.getCachedResult<LoopAnalysis>(*F);
-  const auto *TTI = FAM.getCachedResult<TargetIRAnalysis>(*F);
-  auto *AC = FAM.getCachedResult<AssumptionAnalysis>(*F);
+  auto *LI = AM.getCachedResult<LoopAnalysis>(*F);
+  const auto *TTI = AM.getCachedResult<TargetIRAnalysis>(*F);
+  auto *AC = AM.getCachedResult<AssumptionAnalysis>(*F);
   assert((LI && TTI && AC) && "Analyses for loop rotation not available");
 
   // Optional analyses.
-  auto *DT = FAM.getCachedResult<DominatorTreeAnalysis>(*F);
-  auto *SE = FAM.getCachedResult<ScalarEvolutionAnalysis>(*F);
+  auto *DT = AM.getCachedResult<DominatorTreeAnalysis>(*F);
+  auto *SE = AM.getCachedResult<ScalarEvolutionAnalysis>(*F);
   LoopRotate LR(DefaultRotationThreshold, LI, TTI, AC, DT, SE);
 
   bool Changed = LR.processLoop(&L);

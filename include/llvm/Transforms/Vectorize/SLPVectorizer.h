@@ -54,7 +54,7 @@ struct SLPVectorizerPass : public PassInfoMixin<SLPVectorizerPass> {
   const DataLayout *DL = nullptr;
 
 public:
-  PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
+  PreservedAnalyses run(Function &F, AnalysisManager &AM);
 
   // Glue for old PM.
   bool runImpl(Function &F, ScalarEvolution *SE_, TargetTransformInfo *TTI_,

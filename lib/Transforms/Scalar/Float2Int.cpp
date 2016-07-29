@@ -528,7 +528,7 @@ bool Float2IntPass::runImpl(Function &F) {
 namespace llvm {
 FunctionPass *createFloat2IntPass() { return new Float2IntLegacyPass(); }
 
-PreservedAnalyses Float2IntPass::run(Function &F, FunctionAnalysisManager &) {
+PreservedAnalyses Float2IntPass::run(Function &F, AnalysisManager &) {
   if (!runImpl(F))
     return PreservedAnalyses::all();
   else {

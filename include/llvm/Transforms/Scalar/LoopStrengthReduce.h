@@ -30,7 +30,7 @@ namespace llvm {
 /// Performs Loop Strength Reduce Pass.
 class LoopStrengthReducePass : public PassInfoMixin<LoopStrengthReducePass> {
 public:
-  PreservedAnalyses run(Loop &L, AnalysisManager<Loop> &AM);
+  PreservedAnalyses run(Loop &L, AnalysisManager &AM);
 };
 } // end namespace llvm
 

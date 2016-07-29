@@ -4247,7 +4247,7 @@ PreservedAnalyses SROA::runImpl(Function &F, DominatorTree &RunDT,
   return PA;
 }
 
-PreservedAnalyses SROA::run(Function &F, AnalysisManager<Function> &AM) {
+PreservedAnalyses SROA::run(Function &F, AnalysisManager &AM) {
   return runImpl(F, AM.getResult<DominatorTreeAnalysis>(F),
                  AM.getResult<AssumptionAnalysis>(F));
 }

@@ -59,7 +59,7 @@ LLVM_DUMP_METHOD void DominanceFrontierWrapperPass::dump() const {
 char DominanceFrontierAnalysis::PassID;
 
 DominanceFrontier DominanceFrontierAnalysis::run(Function &F,
-                                                 FunctionAnalysisManager &AM) {
+                                                 AnalysisManager &AM) {
   DominanceFrontier DF;
   DF.analyze(AM.getResult<DominatorTreeAnalysis>(F));
   return DF;
@@ -69,7 +69,7 @@ DominanceFrontierPrinterPass::DominanceFrontierPrinterPass(raw_ostream &OS)
   : OS(OS) {}
 
 PreservedAnalyses
-DominanceFrontierPrinterPass::run(Function &F, FunctionAnalysisManager &AM) {
+DominanceFrontierPrinterPass::run(Function &F, AnalysisManager &AM) {
   OS << "DominanceFrontier for function: " << F.getName() << "\n";
   AM.getResult<DominanceFrontierAnalysis>(F).print(OS);
 

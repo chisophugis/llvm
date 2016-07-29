@@ -172,18 +172,16 @@ public:
 } // End anonymous namespace.
 
 PreservedAnalyses LoopIdiomRecognizePass::run(Loop &L,
-                                              AnalysisManager<Loop> &AM) {
-  const auto &FAM =
-      AM.getResult<FunctionAnalysisManagerLoopProxy>(L).getManager();
+                                              AnalysisManager &AM) {
   Function *F = L.getHeader()->getParent();
 
   // Use getCachedResult because Loop pass cannot trigger a function analysis.
-  auto *AA = FAM.getCachedResult<AAManager>(*F);
-  auto *DT = FAM.getCachedResult<DominatorTreeAnalysis>(*F);
-  auto *LI = FAM.getCachedResult<LoopAnalysis>(*F);
-  auto *SE = FAM.getCachedResult<ScalarEvolutionAnalysis>(*F);
-  auto *TLI = FAM.getCachedResult<TargetLibraryAnalysis>(*F);
-  const auto *TTI = FAM.getCachedResult<TargetIRAnalysis>(*F);
+  auto *AA = AM.getCachedResult<AAManager>(*F);
+  auto *DT = AM.getCachedResult<DominatorTreeAnalysis>(*F);
+  auto *LI = AM.getCachedResult<LoopAnalysis>(*F);
+  auto *SE = AM.getCachedResult<ScalarEvolutionAnalysis>(*F);
+  auto *TLI = AM.getCachedResult<TargetLibraryAnalysis>(*F);
+  const auto *TTI = AM.getCachedResult<TargetIRAnalysis>(*F);
   const auto *DL = &L.getHeader()->getModule()->getDataLayout();
   assert((AA && DT && LI && SE && TLI && TTI && DL) &&
          "Analyses for Loop Idiom Recognition not available");

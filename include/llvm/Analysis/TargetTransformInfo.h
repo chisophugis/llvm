@@ -1028,7 +1028,7 @@ public:
     return *this;
   }
 
-  Result run(const Function &F, AnalysisManager<Function> &);
+  Result run(const Function &F, AnalysisManager &);
 
 private:
   friend AnalysisInfoMixin<TargetIRAnalysis>;

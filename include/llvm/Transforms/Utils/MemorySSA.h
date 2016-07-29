@@ -678,7 +678,7 @@ class MemorySSAAnalysis : public AnalysisInfoMixin<MemorySSAAnalysis> {
 public:
   typedef MemorySSA Result;
 
-  MemorySSA run(Function &F, AnalysisManager<Function> &AM);
+  MemorySSA run(Function &F, AnalysisManager &AM);
 };
 
 /// \brief Printer pass for \c MemorySSA.
@@ -687,12 +687,12 @@ class MemorySSAPrinterPass : public PassInfoMixin<MemorySSAPrinterPass> {
 
 public:
   explicit MemorySSAPrinterPass(raw_ostream &OS) : OS(OS) {}
-  PreservedAnalyses run(Function &F, AnalysisManager<Function> &AM);
+  PreservedAnalyses run(Function &F, AnalysisManager &AM);
 };
 
 /// \brief Verifier pass for \c MemorySSA.
 struct MemorySSAVerifierPass : PassInfoMixin<MemorySSAVerifierPass> {
-  PreservedAnalyses run(Function &F, AnalysisManager<Function> &AM);
+  PreservedAnalyses run(Function &F, AnalysisManager &AM);
 };
 
 /// \brief Legacy analysis pass which computes \c MemorySSA.

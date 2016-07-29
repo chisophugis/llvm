@@ -149,7 +149,7 @@ bool NaryReassociateLegacyPass::runOnFunction(Function &F) {
 }
 
 PreservedAnalyses NaryReassociatePass::run(Function &F,
-                                           FunctionAnalysisManager &AM) {
+                                           AnalysisManager &AM) {
   auto *AC = &AM.getResult<AssumptionAnalysis>(F);
   auto *DT = &AM.getResult<DominatorTreeAnalysis>(F);
   auto *SE = &AM.getResult<ScalarEvolutionAnalysis>(F);

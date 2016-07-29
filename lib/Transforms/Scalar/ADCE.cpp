@@ -200,7 +200,7 @@ bool AggressiveDeadCodeElimination::removeDeadInstructions() {
   return !Worklist.empty();
 }
 
-PreservedAnalyses ADCEPass::run(Function &F, FunctionAnalysisManager &) {
+PreservedAnalyses ADCEPass::run(Function &F, AnalysisManager &) {
   if (!AggressiveDeadCodeElimination(F).performDeadCodeElimination())
     return PreservedAnalyses::all();
 

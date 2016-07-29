@@ -2171,7 +2171,7 @@ void ReassociatePass::ReassociateExpression(BinaryOperator *I) {
   RewriteExprTree(I, Ops);
 }
 
-PreservedAnalyses ReassociatePass::run(Function &F, FunctionAnalysisManager &) {
+PreservedAnalyses ReassociatePass::run(Function &F, AnalysisManager &) {
   // Reassociate needs for each instruction to have its operands already
   // processed, so we first perform a RPOT of the basic blocks so that
   // when we process a basic block, all its dominators have been processed
@@ -2248,8 +2248,8 @@ namespace {
       if (skipFunction(F))
         return false;
 
-      FunctionAnalysisManager DummyFAM;
-      auto PA = Impl.run(F, DummyFAM);
+      AnalysisManager DummyAM;
+      auto PA = Impl.run(F, DummyAM);
       return !PA.areAllPreserved();
     }
 

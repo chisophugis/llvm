@@ -4422,18 +4422,18 @@ FunctionPass *llvm::createVerifierPass(bool FatalErrors) {
 
 char VerifierAnalysis::PassID;
 VerifierAnalysis::Result VerifierAnalysis::run(Module &M,
-                                               ModuleAnalysisManager &) {
+                                               AnalysisManager &) {
   Result Res;
   Res.IRBroken = llvm::verifyModule(M, &dbgs(), &Res.DebugInfoBroken);
   return Res;
 }
 
 VerifierAnalysis::Result VerifierAnalysis::run(Function &F,
-                                               FunctionAnalysisManager &) {
+                                               AnalysisManager &) {
   return { llvm::verifyFunction(F, &dbgs()), false };
 }
 
-PreservedAnalyses VerifierPass::run(Module &M, ModuleAnalysisManager &AM) {
+PreservedAnalyses VerifierPass::run(Module &M, AnalysisManager &AM) {
   auto Res = AM.getResult<VerifierAnalysis>(M);
   if (FatalErrors) {
     if (Res.IRBroken)
@@ -4451,7 +4451,7 @@ PreservedAnalyses VerifierPass::run(Module &M, ModuleAnalysisManager &AM) {
   return PreservedAnalyses::all();
 }
 
-PreservedAnalyses VerifierPass::run(Function &F, FunctionAnalysisManager &AM) {
+PreservedAnalyses VerifierPass::run(Function &F, AnalysisManager &AM) {
   auto res = AM.getResult<VerifierAnalysis>(F);
   if (res.IRBroken && FatalErrors)
     report_fatal_error("Broken function found, compilation aborted!");

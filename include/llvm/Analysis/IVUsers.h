@@ -208,7 +208,7 @@ class IVUsersAnalysis : public AnalysisInfoMixin<IVUsersAnalysis> {
 public:
   typedef IVUsers Result;
 
-  IVUsers run(Loop &L, AnalysisManager<Loop> &AM);
+  IVUsers run(Loop &L, AnalysisManager &AM);
 };
 
 /// Printer pass for the \c IVUsers for a loop.
@@ -217,7 +217,7 @@ class IVUsersPrinterPass : public PassInfoMixin<IVUsersPrinterPass> {
 
 public:
   explicit IVUsersPrinterPass(raw_ostream &OS) : OS(OS) {}
-  PreservedAnalyses run(Loop &L, AnalysisManager<Loop> &AM);
+  PreservedAnalyses run(Loop &L, AnalysisManager &AM);
 };
 }
 

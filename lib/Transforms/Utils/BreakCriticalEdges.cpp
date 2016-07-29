@@ -73,7 +73,7 @@ FunctionPass *llvm::createBreakCriticalEdgesPass() {
 }
 
 PreservedAnalyses BreakCriticalEdgesPass::run(Function &F,
-                                              FunctionAnalysisManager &AM) {
+                                              AnalysisManager &AM) {
   auto *DT = AM.getCachedResult<DominatorTreeAnalysis>(F);
   auto *LI = AM.getCachedResult<LoopAnalysis>(F);
   unsigned N = SplitAllCriticalEdges(F, CriticalEdgeSplittingOptions(DT, LI));

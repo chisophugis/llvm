@@ -27,7 +27,7 @@ namespace llvm {
 /// Pass to remove unused function declarations.
 class GlobalDCEPass : public PassInfoMixin<GlobalDCEPass> {
 public:
-  PreservedAnalyses run(Module &M, ModuleAnalysisManager &);
+  PreservedAnalyses run(Module &M, AnalysisManager &);
 
 private:
   SmallPtrSet<GlobalValue*, 32> AliveGlobals;

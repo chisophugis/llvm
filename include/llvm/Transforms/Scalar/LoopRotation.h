@@ -23,7 +23,7 @@ namespace llvm {
 class LoopRotatePass : public PassInfoMixin<LoopRotatePass> {
 public:
   LoopRotatePass();
-  PreservedAnalyses run(Loop &L, AnalysisManager<Loop> &AM);
+  PreservedAnalyses run(Loop &L, AnalysisManager &AM);
 };
 }
 

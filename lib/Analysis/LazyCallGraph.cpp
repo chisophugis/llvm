@@ -1543,7 +1543,7 @@ static void printRefSCC(raw_ostream &OS, LazyCallGraph::RefSCC &C) {
 }
 
 PreservedAnalyses LazyCallGraphPrinterPass::run(Module &M,
-                                                ModuleAnalysisManager &AM) {
+                                                AnalysisManager &AM) {
   LazyCallGraph &G = AM.getResult<LazyCallGraphAnalysis>(M);
 
   OS << "Printing the call graph for module: " << M.getModuleIdentifier()
@@ -1576,7 +1576,7 @@ static void printNodeDOT(raw_ostream &OS, LazyCallGraph::Node &N) {
 }
 
 PreservedAnalyses LazyCallGraphDOTPrinterPass::run(Module &M,
-                                                   ModuleAnalysisManager &AM) {
+                                                   AnalysisManager &AM) {
   LazyCallGraph &G = AM.getResult<LazyCallGraphAnalysis>(M);
 
   OS << "digraph \"" << DOT::EscapeString(M.getModuleIdentifier()) << "\" {\n";

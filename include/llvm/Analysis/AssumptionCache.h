@@ -106,7 +106,7 @@ public:
   AssumptionAnalysis &operator=(const AssumptionAnalysis &RHS) { return *this; }
   AssumptionAnalysis &operator=(AssumptionAnalysis &&RHS) { return *this; }
 
-  AssumptionCache run(Function &F, FunctionAnalysisManager &) {
+  AssumptionCache run(Function &F, AnalysisManager &) {
     return AssumptionCache(F);
   }
 };
@@ -117,7 +117,7 @@ class AssumptionPrinterPass : public PassInfoMixin<AssumptionPrinterPass> {
 
 public:
   explicit AssumptionPrinterPass(raw_ostream &OS) : OS(OS) {}
-  PreservedAnalyses run(Function &F, AnalysisManager<Function> &AM);
+  PreservedAnalyses run(Function &F, AnalysisManager &AM);
 };
 
 /// \brief An immutable pass that tracks lazily created \c AssumptionCache

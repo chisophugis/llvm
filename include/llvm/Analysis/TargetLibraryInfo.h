@@ -306,8 +306,8 @@ public:
     return *this;
   }
 
-  TargetLibraryInfo run(Module &M, ModuleAnalysisManager &);
-  TargetLibraryInfo run(Function &F, FunctionAnalysisManager &);
+  TargetLibraryInfo run(Module &M, AnalysisManager &);
+  TargetLibraryInfo run(Function &F, AnalysisManager &);
 
 private:
   friend AnalysisInfoMixin<TargetLibraryAnalysis>;

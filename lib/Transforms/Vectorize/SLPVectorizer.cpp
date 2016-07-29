@@ -3507,7 +3507,7 @@ struct SLPVectorizer : public FunctionPass {
 };
 } // end anonymous namespace
 
-PreservedAnalyses SLPVectorizerPass::run(Function &F, FunctionAnalysisManager &AM) {
+PreservedAnalyses SLPVectorizerPass::run(Function &F, AnalysisManager &AM) {
   auto *SE = &AM.getResult<ScalarEvolutionAnalysis>(F);
   auto *TTI = &AM.getResult<TargetIRAnalysis>(F);
   auto *TLI = AM.getCachedResult<TargetLibraryAnalysis>(F);

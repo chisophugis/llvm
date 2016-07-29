@@ -30,7 +30,7 @@ namespace llvm {
 class UnreachableBlockElimPass
     : public PassInfoMixin<UnreachableBlockElimPass> {
 public:
-  PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
+  PreservedAnalyses run(Function &F, AnalysisManager &AM);
 };
 } // end namespace llvm
 

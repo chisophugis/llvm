@@ -2071,14 +2071,14 @@ bool MemorySSAPrinterLegacyPass::runOnFunction(Function &F) {
 
 char MemorySSAAnalysis::PassID;
 
-MemorySSA MemorySSAAnalysis::run(Function &F, AnalysisManager<Function> &AM) {
+MemorySSA MemorySSAAnalysis::run(Function &F, AnalysisManager &AM) {
   auto &DT = AM.getResult<DominatorTreeAnalysis>(F);
   auto &AA = AM.getResult<AAManager>(F);
   return MemorySSA(F, &AA, &DT);
 }
 
 PreservedAnalyses MemorySSAPrinterPass::run(Function &F,
-                                            FunctionAnalysisManager &AM) {
+                                            AnalysisManager &AM) {
   OS << "MemorySSA for function: " << F.getName() << "\n";
   AM.getResult<MemorySSAAnalysis>(F).print(OS);
 
@@ -2086,7 +2086,7 @@ PreservedAnalyses MemorySSAPrinterPass::run(Function &F,
 }
 
 PreservedAnalyses MemorySSAVerifierPass::run(Function &F,
-                                             FunctionAnalysisManager &AM) {
+                                             AnalysisManager &AM) {
   AM.getResult<MemorySSAAnalysis>(F).verifyMemorySSA();
 
   return PreservedAnalyses::all();

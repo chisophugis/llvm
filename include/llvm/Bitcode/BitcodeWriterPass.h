@@ -67,7 +67,7 @@ public:
 
   /// \brief Run the bitcode writer pass, and output the module to the selected
   /// output stream.
-  PreservedAnalyses run(Module &M, ModuleAnalysisManager &);
+  PreservedAnalyses run(Module &M, AnalysisManager &);
 
   static StringRef name() { return "BitcodeWriterPass"; }
 };

@@ -940,7 +940,7 @@ public:
 } // namespace
 
 PreservedAnalyses GVNHoistPass::run(Function &F,
-                                    AnalysisManager<Function> &AM) {
+                                    AnalysisManager &AM) {
   DominatorTree &DT = AM.getResult<DominatorTreeAnalysis>(F);
   AliasAnalysis &AA = AM.getResult<AAManager>(F);
   MemoryDependenceResults &MD = AM.getResult<MemoryDependenceAnalysis>(F);

@@ -94,7 +94,7 @@ struct ConstantInfo {
 
 class ConstantHoistingPass : public PassInfoMixin<ConstantHoistingPass> {
 public:
-  PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
+  PreservedAnalyses run(Function &F, AnalysisManager &AM);
 
   // Glue for old PM.
   bool runImpl(Function &F, TargetTransformInfo &TTI, DominatorTree &DT,

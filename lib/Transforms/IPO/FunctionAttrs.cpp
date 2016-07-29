@@ -1035,14 +1035,11 @@ static bool addNoRecurseAttrs(const SCCNodeSet &SCCNodes) {
 }
 
 PreservedAnalyses PostOrderFunctionAttrsPass::run(LazyCallGraph::SCC &C,
-                                                  CGSCCAnalysisManager &AM) {
-  FunctionAnalysisManager &FAM =
-      AM.getResult<FunctionAnalysisManagerCGSCCProxy>(C).getManager();
-
+                                                  AnalysisManager &AM) {
   // We pass a lambda into functions to wire them up to the analysis manager
   // for getting function analyses.
   auto AARGetter = [&](Function &F) -> AAResults & {
-    return FAM.getResult<AAManager>(F);
+    return AM.getResult<AAManager>(F);
   };
 
   // Fill SCCNodes with the elements of the SCC. Also track whether there are
@@ -1267,7 +1264,7 @@ bool ReversePostOrderFunctionAttrsLegacyPass::runOnModule(Module &M) {
 }
 
 PreservedAnalyses
-ReversePostOrderFunctionAttrsPass::run(Module &M, AnalysisManager<Module> &AM) {
+ReversePostOrderFunctionAttrsPass::run(Module &M, AnalysisManager &AM) {
   auto &CG = AM.getResult<CallGraphAnalysis>(M);
 
   bool Changed = deduceFunctionAttributeInRPO(M, CG);

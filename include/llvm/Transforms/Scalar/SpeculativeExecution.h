@@ -72,7 +72,7 @@ class SpeculativeExecutionPass
 public:
   SpeculativeExecutionPass(bool OnlyIfDivergentTarget = false);
 
-  PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
+  PreservedAnalyses run(Function &F, AnalysisManager &AM);
 
   // Glue for old PM
   bool runImpl(Function &F, TargetTransformInfo *TTI);

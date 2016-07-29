@@ -2565,13 +2565,11 @@ static bool optimizeGlobalsInModule(
   return Changed;
 }
 
-PreservedAnalyses GlobalOptPass::run(Module &M, AnalysisManager<Module> &AM) {
+PreservedAnalyses GlobalOptPass::run(Module &M, AnalysisManager &AM) {
     auto &DL = M.getDataLayout();
     auto &TLI = AM.getResult<TargetLibraryAnalysis>(M);
-    auto &FAM =
-        AM.getResult<FunctionAnalysisManagerModuleProxy>(M).getManager();
-    auto LookupDomTree = [&FAM](Function &F) -> DominatorTree &{
-      return FAM.getResult<DominatorTreeAnalysis>(F);
+    auto LookupDomTree = [&AM](Function &F) -> DominatorTree & {
+      return AM.getResult<DominatorTreeAnalysis>(F);
     };
     if (!optimizeGlobalsInModule(M, DL, &TLI, LookupDomTree))
       return PreservedAnalyses::all();

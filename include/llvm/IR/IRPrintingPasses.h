@@ -30,7 +30,7 @@ class Module;
 class ModulePass;
 class PreservedAnalyses;
 class raw_ostream;
-template <typename IRUnitT> class AnalysisManager;
+class AnalysisManager;
 
 /// \brief Create and return a pass that writes the module to the specified
 /// \c raw_ostream.
@@ -68,7 +68,7 @@ public:
   PrintModulePass(raw_ostream &OS, const std::string &Banner = "",
                   bool ShouldPreserveUseListOrder = false);
 
-  PreservedAnalyses run(Module &M, AnalysisManager<Module> &);
+  PreservedAnalyses run(Module &M, AnalysisManager &);
 
   static StringRef name() { return "PrintModulePass"; }
 };
@@ -85,7 +85,7 @@ public:
   PrintFunctionPass();
   PrintFunctionPass(raw_ostream &OS, const std::string &Banner = "");
 
-  PreservedAnalyses run(Function &F, AnalysisManager<Function> &);
+  PreservedAnalyses run(Function &F, AnalysisManager &);
 
   static StringRef name() { return "PrintFunctionPass"; }
 };

@@ -427,7 +427,7 @@ TargetIRAnalysis::TargetIRAnalysis(
     : TTICallback(std::move(TTICallback)) {}
 
 TargetIRAnalysis::Result TargetIRAnalysis::run(const Function &F,
-                                               AnalysisManager<Function> &) {
+                                               AnalysisManager &) {
   return TTICallback(F);
 }
 
@@ -458,8 +458,8 @@ TargetTransformInfoWrapperPass::TargetTransformInfoWrapperPass(
 }
 
 TargetTransformInfo &TargetTransformInfoWrapperPass::getTTI(const Function &F) {
-  AnalysisManager<Function> DummyFAM;
-  TTI = TIRA.run(F, DummyFAM);
+  AnalysisManager DummyAM;
+  TTI = TIRA.run(F, DummyAM);
   return *TTI;
 }
 

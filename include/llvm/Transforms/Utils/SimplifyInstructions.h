@@ -24,7 +24,7 @@ namespace llvm {
 /// This pass removes redundant instructions.
 class InstSimplifierPass : public PassInfoMixin<InstSimplifierPass> {
 public:
-  PreservedAnalyses run(Function &F, AnalysisManager<Function> &AM);
+  PreservedAnalyses run(Function &F, AnalysisManager &AM);
 };
 } // end namespace llvm
 

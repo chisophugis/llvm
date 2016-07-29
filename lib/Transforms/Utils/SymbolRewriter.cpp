@@ -526,7 +526,7 @@ bool RewriteSymbolsLegacyPass::runOnModule(Module &M) {
 }
 
 namespace llvm {
-PreservedAnalyses RewriteSymbolPass::run(Module &M, ModuleAnalysisManager &AM) {
+PreservedAnalyses RewriteSymbolPass::run(Module &M, AnalysisManager &AM) {
   if (!runImpl(M))
     return PreservedAnalyses::all();
 

@@ -62,7 +62,7 @@ static bool eliminateAvailableExternally(Module &M) {
 }
 
 PreservedAnalyses
-EliminateAvailableExternallyPass::run(Module &M, ModuleAnalysisManager &) {
+EliminateAvailableExternallyPass::run(Module &M, AnalysisManager &) {
   if (!eliminateAvailableExternally(M))
     return PreservedAnalyses::all();
   return PreservedAnalyses::none();

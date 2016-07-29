@@ -92,7 +92,7 @@
 namespace llvm {
 class NaryReassociatePass : public PassInfoMixin<NaryReassociatePass> {
 public:
-  PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
+  PreservedAnalyses run(Function &F, AnalysisManager &AM);
 
   // Glue for old PM.
   bool runImpl(Function &F, AssumptionCache *AC_, DominatorTree *DT_,

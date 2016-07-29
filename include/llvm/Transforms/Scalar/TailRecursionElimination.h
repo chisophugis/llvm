@@ -59,7 +59,7 @@
 namespace llvm {
 
 struct TailCallElimPass : PassInfoMixin<TailCallElimPass> {
-  PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
+  PreservedAnalyses run(Function &F, AnalysisManager &AM);
 };
 }
 

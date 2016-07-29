@@ -1367,7 +1367,7 @@ bool MemCpyOptPass::iterateOnFunction(Function &F) {
   return MadeChange;
 }
 
-PreservedAnalyses MemCpyOptPass::run(Function &F, FunctionAnalysisManager &AM) {
+PreservedAnalyses MemCpyOptPass::run(Function &F, AnalysisManager &AM) {
 
   auto &MD = AM.getResult<MemoryDependenceAnalysis>(F);
   auto &TLI = AM.getResult<TargetLibraryAnalysis>(F);

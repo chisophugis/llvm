@@ -287,7 +287,7 @@ SpeculativeExecutionPass::SpeculativeExecutionPass(bool OnlyIfDivergentTarget)
                             SpecExecOnlyIfDivergentTarget) {}
 
 PreservedAnalyses SpeculativeExecutionPass::run(Function &F,
-                                                FunctionAnalysisManager &AM) {
+                                                AnalysisManager &AM) {
   auto *TTI = &AM.getResult<TargetIRAnalysis>(F);
 
   bool Changed = runImpl(F, TTI);

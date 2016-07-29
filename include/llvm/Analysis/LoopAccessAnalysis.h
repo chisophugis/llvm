@@ -775,7 +775,7 @@ class LoopAccessAnalysis
 
 public:
   typedef LoopAccessInfo Result;
-  Result run(Loop &, AnalysisManager<Loop> &);
+  Result run(Loop &, AnalysisManager &);
   static StringRef name() { return "LoopAccessAnalysis"; }
 };
 
@@ -786,7 +786,7 @@ class LoopAccessInfoPrinterPass
 
 public:
   explicit LoopAccessInfoPrinterPass(raw_ostream &OS) : OS(OS) {}
-  PreservedAnalyses run(Loop &L, AnalysisManager<Loop> &AM);
+  PreservedAnalyses run(Loop &L, AnalysisManager &AM);
 };
 
 inline Instruction *MemoryDepChecker::Dependence::getSource(

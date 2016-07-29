@@ -36,18 +36,16 @@ using namespace llvm;
 
 char IVUsersAnalysis::PassID;
 
-IVUsers IVUsersAnalysis::run(Loop &L, AnalysisManager<Loop> &AM) {
-  const auto &FAM =
-      AM.getResult<FunctionAnalysisManagerLoopProxy>(L).getManager();
+IVUsers IVUsersAnalysis::run(Loop &L, AnalysisManager &AM) {
   Function *F = L.getHeader()->getParent();
 
-  return IVUsers(&L, FAM.getCachedResult<AssumptionAnalysis>(*F),
-                 FAM.getCachedResult<LoopAnalysis>(*F),
-                 FAM.getCachedResult<DominatorTreeAnalysis>(*F),
-                 FAM.getCachedResult<ScalarEvolutionAnalysis>(*F));
+  return IVUsers(&L, AM.getCachedResult<AssumptionAnalysis>(*F),
+                 AM.getCachedResult<LoopAnalysis>(*F),
+                 AM.getCachedResult<DominatorTreeAnalysis>(*F),
+                 AM.getCachedResult<ScalarEvolutionAnalysis>(*F));
 }
 
-PreservedAnalyses IVUsersPrinterPass::run(Loop &L, AnalysisManager<Loop> &AM) {
+PreservedAnalyses IVUsersPrinterPass::run(Loop &L, AnalysisManager &AM) {
   AM.getResult<IVUsersAnalysis>(L).print(OS);
   return PreservedAnalyses::all();
 }

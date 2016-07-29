@@ -140,15 +140,14 @@ ProfileSummaryInfoWrapperPass::ProfileSummaryInfoWrapperPass()
 }
 
 char ProfileSummaryAnalysis::PassID;
-ProfileSummaryInfo ProfileSummaryAnalysis::run(Module &M,
-                                               ModuleAnalysisManager &) {
+ProfileSummaryInfo ProfileSummaryAnalysis::run(Module &M, AnalysisManager &) {
   return ProfileSummaryInfo(M);
 }
 
 // FIXME: This only tests isHotFunction and isColdFunction and not the
 // isHotCount and isColdCount calls.
 PreservedAnalyses ProfileSummaryPrinterPass::run(Module &M,
-                                                 AnalysisManager<Module> &AM) {
+                                                 AnalysisManager &AM) {
   ProfileSummaryInfo &PSI = AM.getResult<ProfileSummaryAnalysis>(M);
 
   OS << "Functions in " << M.getName() << " with hot/cold annotations: \n";
