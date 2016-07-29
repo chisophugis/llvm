@@ -909,8 +909,6 @@ private:
   RefSCC *getNextRefSCCInPostOrder();
 };
 
-static inline int getIRUnitKindID(LazyCallGraph::SCC *) { return 3; }
-
 inline LazyCallGraph::Edge::Edge() : Value() {}
 inline LazyCallGraph::Edge::Edge(Function &F, Kind K) : Value(&F, K) {}
 inline LazyCallGraph::Edge::Edge(Node &N, Kind K) : Value(&N, K) {}

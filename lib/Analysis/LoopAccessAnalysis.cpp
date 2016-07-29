@@ -2030,15 +2030,13 @@ INITIALIZE_PASS_END(LoopAccessLegacyAnalysis, LAA_NAME, laa_name, false, true)
 
 char LoopAccessAnalysis::PassID;
 
-LoopAccessInfo LoopAccessAnalysis::run(Loop &L, LoopAnalysisManager &AM) {
-  const FunctionAnalysisManager &FAM =
-      AM.getResult<FunctionAnalysisManagerLoopProxy>(L).getManager();
+LoopAccessInfo LoopAccessAnalysis::run(Loop &L, AnalysisManager &AM) {
   Function &F = *L.getHeader()->getParent();
-  auto *SE = FAM.getCachedResult<ScalarEvolutionAnalysis>(F);
-  auto *TLI = FAM.getCachedResult<TargetLibraryAnalysis>(F);
-  auto *AA = FAM.getCachedResult<AAManager>(F);
-  auto *DT = FAM.getCachedResult<DominatorTreeAnalysis>(F);
-  auto *LI = FAM.getCachedResult<LoopAnalysis>(F);
+  auto *SE = AM.getCachedResult<ScalarEvolutionAnalysis>(F);
+  auto *TLI = AM.getCachedResult<TargetLibraryAnalysis>(F);
+  auto *AA = AM.getCachedResult<AAManager>(F);
+  auto *DT = AM.getCachedResult<DominatorTreeAnalysis>(F);
+  auto *LI = AM.getCachedResult<LoopAnalysis>(F);
   if (!SE)
     report_fatal_error(
         "ScalarEvolution must have been cached at a higher level");

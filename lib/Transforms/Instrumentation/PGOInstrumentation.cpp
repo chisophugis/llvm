@@ -964,15 +964,13 @@ bool PGOInstrumentationGenLegacyPass::runOnModule(Module &M) {
 }
 
 PreservedAnalyses PGOInstrumentationGen::run(Module &M,
-                                             ModuleAnalysisManager &AM) {
-
-  auto &FAM = AM.getResult<FunctionAnalysisManagerModuleProxy>(M).getManager();
-  auto LookupBPI = [&FAM](Function &F) {
-    return &FAM.getResult<BranchProbabilityAnalysis>(F);
+                                             AnalysisManager &AM) {
+  auto LookupBPI = [&AM](Function &F) {
+    return &AM.getResult<BranchProbabilityAnalysis>(F);
   };
 
-  auto LookupBFI = [&FAM](Function &F) {
-    return &FAM.getResult<BlockFrequencyAnalysis>(F);
+  auto LookupBFI = [&AM](Function &F) {
+    return &AM.getResult<BlockFrequencyAnalysis>(F);
   };
 
   if (!InstrumentAllFunctions(M, LookupBPI, LookupBFI))
@@ -1056,15 +1054,13 @@ PGOInstrumentationUse::PGOInstrumentationUse(std::string Filename)
 }
 
 PreservedAnalyses PGOInstrumentationUse::run(Module &M,
-                                             ModuleAnalysisManager &AM) {
-
-  auto &FAM = AM.getResult<FunctionAnalysisManagerModuleProxy>(M).getManager();
-  auto LookupBPI = [&FAM](Function &F) {
-    return &FAM.getResult<BranchProbabilityAnalysis>(F);
+                                             AnalysisManager &AM) {
+  auto LookupBPI = [&AM](Function &F) {
+    return &AM.getResult<BranchProbabilityAnalysis>(F);
   };
 
-  auto LookupBFI = [&FAM](Function &F) {
-    return &FAM.getResult<BlockFrequencyAnalysis>(F);
+  auto LookupBFI = [&AM](Function &F) {
+    return &AM.getResult<BlockFrequencyAnalysis>(F);
   };
 
   if (!annotateAllFunctions(M, ProfileFileName, LookupBPI, LookupBFI))

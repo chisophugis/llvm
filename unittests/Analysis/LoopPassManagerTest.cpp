@@ -144,23 +144,13 @@ public:
   } while (0)
 
 TEST_F(LoopPassManagerTest, Basic) {
-  LoopAnalysisManager LAM(true);
+  AnalysisManager AM(true);
   int LoopAnalysisRuns = 0;
-  LAM.registerPass<Loop>([&] { return TestLoopAnalysis(LoopAnalysisRuns); });
+  AM.registerPass<Loop>([&] { return TestLoopAnalysis(LoopAnalysisRuns); });
 
-  FunctionAnalysisManager FAM(true);
   // We need DominatorTreeAnalysis for LoopAnalysis.
-  FAM.registerPass<Function>([&] { return DominatorTreeAnalysis(); });
-  FAM.registerPass<Function>([&] { return LoopAnalysis(); });
-  FAM.registerPass<Function>(
-      [&] { return LoopAnalysisManagerFunctionProxy(LAM); });
-  LAM.registerPass<Loop>([&] { return FunctionAnalysisManagerLoopProxy(FAM); });
-
-  ModuleAnalysisManager MAM(true);
-  MAM.registerPass<Module>(
-      [&] { return FunctionAnalysisManagerModuleProxy(FAM); });
-  FAM.registerPass<Function>(
-      [&] { return ModuleAnalysisManagerFunctionProxy(MAM); });
+  AM.registerPass<Function>([&] { return DominatorTreeAnalysis(); });
+  AM.registerPass<Function>([&] { return LoopAnalysis(); });
 
   ModulePassManager MPM(true);
   FunctionPassManager FPM(true);
@@ -188,7 +178,7 @@ TEST_F(LoopPassManagerTest, Basic) {
   }
 
   MPM.addPass(createModuleToFunctionPassAdaptor(std::move(FPM)));
-  MPM.run(*M, MAM);
+  MPM.run(*M, AM);
 
   StringRef ExpectedLoops[] = {"loop.0.0", "loop.0.1", "loop.0", "loop.g.0"};
 

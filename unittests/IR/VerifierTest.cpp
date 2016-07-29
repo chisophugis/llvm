@@ -192,9 +192,9 @@ TEST(VerifierTest, StripInvalidDebugInfo) {
 
   ModulePassManager MPM(true);
   MPM.addPass(VerifierPass(false));
-  ModuleAnalysisManager MAM(true);
-  MAM.registerPass<Module>([&] { return VerifierAnalysis(); });
-  MPM.run(M, MAM);
+  AnalysisManager AM(true);
+  AM.registerPass<Module>([&] { return VerifierAnalysis(); });
+  MPM.run(M, AM);
   EXPECT_FALSE(verifyModule(M));
 }
 #endif

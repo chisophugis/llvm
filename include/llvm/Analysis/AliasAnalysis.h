@@ -889,23 +889,20 @@ private:
   friend AnalysisInfoMixin<AAManager>;
   static char PassID;
 
-  SmallVector<void (*)(Function &F, FunctionAnalysisManager &AM,
-                       AAResults &AAResults),
-              4> ResultGetters;
+  SmallVector<void (*)(Function &F, AnalysisManager &AM, AAResults &AAResults),
+              4>
+      ResultGetters;
 
   template <typename AnalysisT>
-  static void getFunctionAAResultImpl(Function &F,
-                                      FunctionAnalysisManager &AM,
+  static void getFunctionAAResultImpl(Function &F, AnalysisManager &AM,
                                       AAResults &AAResults) {
     AAResults.addAAResult(AM.template getResult<AnalysisT>(F));
   }
 
   template <typename AnalysisT>
-  static void getModuleAAResultImpl(Function &F, FunctionAnalysisManager &AM,
+  static void getModuleAAResultImpl(Function &F, AnalysisManager &AM,
                                     AAResults &AAResults) {
-    auto &MAM =
-        AM.getResult<ModuleAnalysisManagerFunctionProxy>(F).getManager();
-    if (auto *R = MAM.template getCachedResult<AnalysisT>(*F.getParent()))
+    if (auto *R = AM.template getCachedResult<AnalysisT>(*F.getParent()))
       AAResults.addAAResult(*R);
   }
 };

@@ -1058,18 +1058,16 @@ Pass *llvm::createSimpleLoopUnrollPass() {
   return llvm::createLoopUnrollPass(-1, -1, 0, 0);
 }
 
-PreservedAnalyses LoopUnrollPass::run(Loop &L, LoopAnalysisManager &AM) {
-  const auto &FAM =
-      AM.getResult<FunctionAnalysisManagerLoopProxy>(L).getManager();
+PreservedAnalyses LoopUnrollPass::run(Loop &L, AnalysisManager &AM) {
   Function *F = L.getHeader()->getParent();
 
 
-  DominatorTree *DT = FAM.getCachedResult<DominatorTreeAnalysis>(*F);
-  LoopInfo *LI = FAM.getCachedResult<LoopAnalysis>(*F);
-  ScalarEvolution *SE = FAM.getCachedResult<ScalarEvolutionAnalysis>(*F);
-  auto *TTI = FAM.getCachedResult<TargetIRAnalysis>(*F);
-  auto *AC = FAM.getCachedResult<AssumptionAnalysis>(*F);
-  auto *ORE = FAM.getCachedResult<OptimizationRemarkEmitterAnalysis>(*F);
+  DominatorTree *DT = AM.getCachedResult<DominatorTreeAnalysis>(*F);
+  LoopInfo *LI = AM.getCachedResult<LoopAnalysis>(*F);
+  ScalarEvolution *SE = AM.getCachedResult<ScalarEvolutionAnalysis>(*F);
+  auto *TTI = AM.getCachedResult<TargetIRAnalysis>(*F);
+  auto *AC = AM.getCachedResult<AssumptionAnalysis>(*F);
+  auto *ORE = AM.getCachedResult<OptimizationRemarkEmitterAnalysis>(*F);
   if (!DT)
     report_fatal_error("LoopUnrollPass: DominatorTreeAnalysis not cached at a higher level");
   if (!LI)

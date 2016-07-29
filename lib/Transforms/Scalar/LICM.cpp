@@ -173,16 +173,14 @@ private:
 };
 }
 
-PreservedAnalyses LICMPass::run(Loop &L, LoopAnalysisManager &AM) {
-  const auto &FAM =
-      AM.getResult<FunctionAnalysisManagerLoopProxy>(L).getManager();
+PreservedAnalyses LICMPass::run(Loop &L, AnalysisManager &AM) {
   Function *F = L.getHeader()->getParent();
 
-  auto *AA = FAM.getCachedResult<AAManager>(*F);
-  auto *LI = FAM.getCachedResult<LoopAnalysis>(*F);
-  auto *DT = FAM.getCachedResult<DominatorTreeAnalysis>(*F);
-  auto *TLI = FAM.getCachedResult<TargetLibraryAnalysis>(*F);
-  auto *SE = FAM.getCachedResult<ScalarEvolutionAnalysis>(*F);
+  auto *AA = AM.getCachedResult<AAManager>(*F);
+  auto *LI = AM.getCachedResult<LoopAnalysis>(*F);
+  auto *DT = AM.getCachedResult<DominatorTreeAnalysis>(*F);
+  auto *TLI = AM.getCachedResult<TargetLibraryAnalysis>(*F);
+  auto *SE = AM.getCachedResult<ScalarEvolutionAnalysis>(*F);
   assert((AA && LI && DT && TLI && SE) && "Analyses for LICM not available");
 
   LoopInvariantCodeMotion LICM;

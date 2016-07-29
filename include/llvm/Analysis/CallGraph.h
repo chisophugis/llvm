@@ -291,10 +291,6 @@ private:
 };
 
 /// \brief An analysis pass to compute the \c CallGraph for a \c Module.
-///
-/// This class implements the concept of an analysis pass used by the \c
-/// ModuleAnalysisManager to run an analysis over a module and cache the
-/// resulting data.
 class CallGraphAnalysis : public AnalysisInfoMixin<CallGraphAnalysis> {
   friend AnalysisInfoMixin<CallGraphAnalysis>;
   static char PassID;
@@ -306,7 +302,7 @@ public:
   /// \brief Compute the \c CallGraph for the module \c M.
   ///
   /// The real work here is done in the \c CallGraph constructor.
-  CallGraph run(Module &M, ModuleAnalysisManager &) { return CallGraph(M); }
+  CallGraph run(Module &M, AnalysisManager &) { return CallGraph(M); }
 };
 
 /// \brief Printer pass for the \c CallGraphAnalysis results.

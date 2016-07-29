@@ -53,7 +53,6 @@ namespace llvm {
 class DominatorTree;
 class LoopInfo;
 class Loop;
-static inline int getIRUnitKindID(Loop *) { return 2; }
 class MDNode;
 class PHINode;
 class raw_ostream;
@@ -847,7 +846,7 @@ public:
   PrintLoopPass();
   PrintLoopPass(raw_ostream &OS, const std::string &Banner = "");
 
-  PreservedAnalyses run(Loop &L, AnalysisManager<Loop> &);
+  PreservedAnalyses run(Loop &L, AnalysisManager &);
 };
 
 } // End llvm namespace

@@ -29,35 +29,13 @@ extern template class PassManager<Loop>;
 /// typedef serves as a convenient way to refer to this construct.
 typedef PassManager<Loop> LoopPassManager;
 
-extern template class AnalysisManager<Loop>;
-/// \brief The loop analysis manager.
-///
-/// See the documentation for the AnalysisManager template for detail
-/// documentation. This typedef serves as a convenient way to refer to this
-/// construct in the adaptors and proxies used to integrate this into the larger
-/// pass manager infrastructure.
-typedef AnalysisManager<Loop> LoopAnalysisManager;
-
-extern template class InnerAnalysisManagerProxy<LoopAnalysisManager, Function>;
-/// A proxy from a \c LoopAnalysisManager to a \c Function.
-typedef InnerAnalysisManagerProxy<LoopAnalysisManager, Function>
-    LoopAnalysisManagerFunctionProxy;
-
-extern template class OuterAnalysisManagerProxy<FunctionAnalysisManager, Loop>;
-/// A proxy from a \c FunctionAnalysisManager to a \c Loop.
-typedef OuterAnalysisManagerProxy<FunctionAnalysisManager, Loop>
-    FunctionAnalysisManagerLoopProxy;
-
 /// Returns the minimum set of Analyses that all loop passes must preserve.
 PreservedAnalyses getLoopPassPreservedAnalyses();
 
 /// \brief Adaptor that maps from a function to its loops.
 ///
 /// Designed to allow composition of a LoopPass(Manager) and a
-/// FunctionPassManager. Note that if this pass is constructed with a \c
-/// FunctionAnalysisManager it will run the \c LoopAnalysisManagerFunctionProxy
-/// analysis prior to running the loop passes over the function to enable a \c
-/// LoopAnalysisManager to be used within this run safely.
+/// FunctionPassManager.
 template <typename LoopPassT>
 class FunctionToLoopPassAdaptor
     : public PassInfoMixin<FunctionToLoopPassAdaptor<LoopPassT>> {
@@ -81,10 +59,7 @@ public:
   }
 
   /// \brief Runs the loop passes across every loop in the function.
-  PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM) {
-    // Setup the loop analysis manager from its proxy.
-    LoopAnalysisManager &LAM =
-        AM.getResult<LoopAnalysisManagerFunctionProxy>(F).getManager();
+  PreservedAnalyses run(Function &F, AnalysisManager &AM) {
     // Get the loop structure for this function
     LoopInfo &LI = AM.getResult<LoopAnalysis>(F);
 
@@ -103,7 +78,7 @@ public:
     // Now pop each element off of the stack to visit the loops in reverse
     // post-order.
     for (auto *L : reverse(Loops)) {
-      PreservedAnalyses PassPA = Pass.run(*L, LAM);
+      PreservedAnalyses PassPA = Pass.run(*L, AM);
       assert(PassPA.preserved(getLoopPassPreservedAnalyses()) &&
              "Loop passes must preserve all relevant analyses");
 
@@ -112,23 +87,23 @@ public:
       // loop analysis manager's invalidation here.  Also, update the
       // preserved analyses to reflect that once invalidated these can again
       // be preserved.
-      PassPA = LAM.invalidate(*L, std::move(PassPA));
+      PassPA = AM.invalidate(*L, std::move(PassPA));
 
       // Then intersect the preserved set so that invalidation of module
       // analyses will eventually occur when the module pass completes.
       PA.intersect(std::move(PassPA));
     }
-
-    // By definition we preserve the proxy. This precludes *any* invalidation of
-    // loop analyses by the proxy, but that's OK because we've taken care to
-    // invalidate analyses in the loop analysis manager incrementally above.
-    PA.preserve<LoopAnalysisManagerFunctionProxy>();
     return PA;
   }
 
 private:
   LoopPassT Pass;
 };
+
+static inline IRUnitKind getIRUnitKindID(Loop *) { return IRK_Loop; }
+
+// FIXME: Temporary typedef to avoid needing as much source churn.
+typedef AnalysisManager LoopAnalysisManager;
 
 /// \brief A function to deduce a loop pass type and wrap it in the templated
 /// adaptor.
