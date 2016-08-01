@@ -400,7 +400,7 @@ private:
 
 struct PerIRUnitAnalysisResultListElement;
 struct DependentTrackingNode {
-  PerIRUnitAnalysisResultListElement *Dependent;
+  std::list<PerIRUnitAnalysisResultListElement>::iterator Dependent;
 
   // This is a backpointer to allow deletion by somebody with just an
   // iterator.
@@ -408,13 +408,19 @@ struct DependentTrackingNode {
 };
 struct PerIRUnitAnalysisResultListElement {
   PerIRUnitAnalysisResultListElement(
-      AnalysisKey AK_, std::unique_ptr<detail::AnalysisResultConcept> &&AnalysisResult_)
-      : AK(AK_), Result(std::move(AnalysisResult_)) {}
+      AnalysisKey AK_,
+      std::unique_ptr<detail::AnalysisResultConcept> AnalysisResult_,
+      std::list<PerIRUnitAnalysisResultListElement> &OwnerList_)
+      : AK(AK_), Result(std::move(AnalysisResult_)), OwnerList(OwnerList_) {}
   AnalysisKey AK;
   std::unique_ptr<detail::AnalysisResultConcept> Result;
   std::list<DependentTrackingNode> Dependents;
   std::vector<std::list<DependentTrackingNode>::iterator>
       DependentTrackingNodesThatPointAtMe;
+
+  // This is a backpointer to allow deletion by somebody with just an
+  // iterator.
+  std::list<PerIRUnitAnalysisResultListElement> &OwnerList;
 };
 
 /// \brief A generic analysis pass manager with lazy running and caching of
@@ -483,6 +489,8 @@ private:
         std::make_pair(std::make_pair(AK, static_cast<TypeErasedIRUnitID>(&IR)),
                        typename AnalysisResultListT::iterator()));
 
+    AnalysisResultListT::iterator ThisResult = RI->second;
+
     // If we don't have a cached result for this function, look up the pass and
     // run it to produce a result, which we then add to the cache.
     if (Inserted) {
@@ -495,18 +503,25 @@ private:
         ResultListPtr = make_unique<AnalysisResultListT>();
       AnalysisResultListT &ResultList = *ResultListPtr;
       ResultList.emplace_back(
-          AK, P.run(static_cast<TypeErasedIRUnitID>(&IR), *this));
-
-      // P.run may have inserted elements into AnalysisResults and invalidated
-      // RI.
-      RI = AnalysisResults.find(
-          std::make_pair(AK, static_cast<TypeErasedIRUnitID>(&IR)));
-      assert(RI != AnalysisResults.end() && "we just inserted it!");
-
-      RI->second = std::prev(ResultList.end());
+          AK, std::unique_ptr<detail::AnalysisResultConcept>(nullptr),
+          ResultList);
+      PerIRUnitAnalysisResultListElement &E = ResultList.back();
+      ThisResult = std::prev(ResultList.end());
+      RI->second = ThisResult;
+      InFlightAnalysesStack.push_back(ThisResult);
+      E.Result = P.run(static_cast<TypeErasedIRUnitID>(&IR), *this);
+      InFlightAnalysesStack.pop_back();
     }
 
-    return *RI->second->Result;
+    // Add dependency tracking links.
+    if (!InFlightAnalysesStack.empty()) {
+      auto I = InFlightAnalysesStack.back();
+      ThisResult->Dependents.push_back({I, ThisResult->Dependents});
+      I->DependentTrackingNodesThatPointAtMe.push_back(
+          std::prev(ThisResult->Dependents.end()));
+    }
+
+    return *ThisResult->Result;
   }
 
   /// \brief Get a cached analysis result or return null.
@@ -639,6 +654,9 @@ private:
   /// \brief Map from an analysis ID and function to a particular cached
   /// analysis result.
   AnalysisResultMapT AnalysisResults;
+
+  /// \brief A stack of analyses currently being computed.
+  SmallVector<AnalysisResultListT::iterator, 8> InFlightAnalysesStack;
 
   /// \brief A flag indicating whether debug logging is enabled.
   bool DebugLogging;
