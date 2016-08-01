@@ -398,6 +398,25 @@ private:
 
 } // End namespace detail
 
+struct PerIRUnitAnalysisResultListElement;
+struct DependentTrackingNode {
+  PerIRUnitAnalysisResultListElement *Dependent;
+
+  // This is a backpointer to allow deletion by somebody with just an
+  // iterator.
+  std::list<DependentTrackingNode> &OwnerList;
+};
+struct PerIRUnitAnalysisResultListElement {
+  PerIRUnitAnalysisResultListElement(
+      AnalysisKey AK_, std::unique_ptr<detail::AnalysisResultConcept> &&AnalysisResult_)
+      : AK(AK_), Result(std::move(AnalysisResult_)) {}
+  AnalysisKey AK;
+  std::unique_ptr<detail::AnalysisResultConcept> Result;
+  std::list<DependentTrackingNode> Dependents;
+  std::vector<std::list<DependentTrackingNode>::iterator>
+      DependentTrackingNodesThatPointAtMe;
+};
+
 /// \brief A generic analysis pass manager with lazy running and caching of
 /// results.
 ///
@@ -487,7 +506,7 @@ private:
       RI->second = std::prev(ResultList.end());
     }
 
-    return *RI->second->second;
+    return *RI->second->Result;
   }
 
   /// \brief Get a cached analysis result or return null.
@@ -495,7 +514,7 @@ private:
   ResultConceptT *getCachedResultImpl(AnalysisKey AK, IRUnitT &IR) const {
     typename AnalysisResultMapT::const_iterator RI = AnalysisResults.find(
         std::make_pair(AK, static_cast<TypeErasedIRUnitID>(&IR)));
-    return RI == AnalysisResults.end() ? nullptr : &*RI->second->second;
+    return RI == AnalysisResults.end() ? nullptr : &*RI->second->Result;
   }
 
   /// \brief Invalidate a function pass result.
@@ -534,17 +553,17 @@ private:
     for (typename AnalysisResultListT::iterator I = ResultsList.begin(),
                                                 E = ResultsList.end();
          I != E;) {
-      AnalysisKey AK = I->first;
+      AnalysisKey AK = I->AK;
 
       // Pass the invalidation down to the pass itself to see if it thinks it is
       // necessary. The analysis pass can return false if no action on the part
       // of the analysis manager is required for this invalidation event.
-      if (I->second->invalidate(static_cast<TypeErasedIRUnitID>(&IR), PA)) {
+      if (I->Result->invalidate(static_cast<TypeErasedIRUnitID>(&IR), PA)) {
         if (DebugLogging)
           dbgs() << "Invalidating analysis: " << this->lookupPass(AK).name()
                  << "\n";
 
-        InvalidatedAnalysisKeys.push_back(I->first);
+        InvalidatedAnalysisKeys.push_back(I->AK);
         I = ResultsList.erase(I);
       } else {
         ++I;
@@ -598,9 +617,8 @@ private:
   /// Requires iterators to be valid across appending new entries and arbitrary
   /// erases. Provides both the pass ID and concept pointer such that it is
   /// half of a bijection and provides storage for the actual result concept.
-  typedef std::list<
-      std::pair<AnalysisKey, std::unique_ptr<detail::AnalysisResultConcept>>>
-      AnalysisResultListT;
+  /// Also does dependency tracking.
+  typedef std::list<PerIRUnitAnalysisResultListElement> AnalysisResultListT;
 
   /// \brief Map type from function pointer to our custom list type.
   typedef DenseMap<TypeErasedIRUnitID, std::unique_ptr<AnalysisResultListT>>
