@@ -470,8 +470,11 @@ private:
       auto &P = this->lookupPass(AK);
       if (DebugLogging)
         dbgs() << "Running analysis: " << P.name() << "\n";
-      AnalysisResultListT &ResultList =
+      std::unique_ptr<AnalysisResultListT> &ResultListPtr =
           AnalysisResultLists[static_cast<TypeErasedIRUnitID>(&IR)];
+      if (!ResultListPtr)
+        ResultListPtr = make_unique<AnalysisResultListT>();
+      AnalysisResultListT &ResultList = *ResultListPtr;
       ResultList.emplace_back(
           AK, P.run(static_cast<TypeErasedIRUnitID>(&IR), *this));
 
@@ -505,7 +508,7 @@ private:
     if (DebugLogging)
       dbgs() << "Invalidating analysis: " << this->lookupPass(AK).name()
              << "\n";
-    AnalysisResultLists[static_cast<TypeErasedIRUnitID>(&IR)].erase(RI->second);
+    AnalysisResultLists[static_cast<TypeErasedIRUnitID>(&IR)]->erase(RI->second);
     AnalysisResults.erase(RI);
   }
 
@@ -523,8 +526,11 @@ private:
     // Clear all the invalidated results associated specifically with this
     // function.
     SmallVector<AnalysisKey, 8> InvalidatedAnalysisKeys;
-    AnalysisResultListT &ResultsList =
+    std::unique_ptr<AnalysisResultListT> &ResultsListPtr =
         AnalysisResultLists[static_cast<TypeErasedIRUnitID>(&IR)];
+    if (!ResultsListPtr)
+      ResultsListPtr = make_unique<AnalysisResultListT>();
+    AnalysisResultListT &ResultsList = *ResultsListPtr;
     for (typename AnalysisResultListT::iterator I = ResultsList.begin(),
                                                 E = ResultsList.end();
          I != E;) {
@@ -597,7 +603,7 @@ private:
       AnalysisResultListT;
 
   /// \brief Map type from function pointer to our custom list type.
-  typedef DenseMap<TypeErasedIRUnitID, AnalysisResultListT>
+  typedef DenseMap<TypeErasedIRUnitID, std::unique_ptr<AnalysisResultListT>>
       AnalysisResultListMapT;
 
   /// \brief Map from function to a list of function analysis results.
