@@ -410,17 +410,16 @@ struct PerIRUnitAnalysisResultListElement {
   PerIRUnitAnalysisResultListElement(
       AnalysisKey AK_,
       std::unique_ptr<detail::AnalysisResultConcept> AnalysisResult_,
-      std::list<PerIRUnitAnalysisResultListElement> &OwnerList_, TypeErasedIRUnitID ID_)
-      : AK(AK_), Result(std::move(AnalysisResult_)), OwnerList(OwnerList_), ID(ID_) {}
+      TypeErasedIRUnitID ID_)
+      : AK(AK_), Result(std::move(AnalysisResult_)), ID(ID_) {}
   AnalysisKey AK;
   std::unique_ptr<detail::AnalysisResultConcept> Result;
   std::list<DependentTrackingNode> Dependents;
   std::vector<std::list<DependentTrackingNode>::iterator>
       DependentTrackingNodesThatPointAtMe;
 
-  // This is a backpointer to allow deletion by somebody with just an
-  // iterator.
-  std::list<PerIRUnitAnalysisResultListElement> &OwnerList;
+  // This is needed so that we can invalidate this analysis result with
+  // just an iterator to this struct.
   TypeErasedIRUnitID ID;
 };
 
@@ -514,7 +513,7 @@ private:
       AnalysisResultListT &ResultList = *ResultListPtr;
       ResultList.emplace_back(
           AK, std::unique_ptr<detail::AnalysisResultConcept>(nullptr),
-          ResultList, static_cast<TypeErasedIRUnitID>(&IR));
+          static_cast<TypeErasedIRUnitID>(&IR));
       PerIRUnitAnalysisResultListElement &E = ResultList.back();
       ThisResult = std::prev(ResultList.end());
       RI->second = ThisResult;
@@ -565,7 +564,20 @@ private:
              << "\n";
     auto I = RI->second;
     auto &L = *AnalysisResultLists[ID];
-    // XXX: Fill in the invalidation logic here!
+    auto &D = I->Dependents;
+    // Invalidate all dependents.
+    while (!D.empty()) {
+      auto &Element = *D.front().Dependent;
+      // This recursive call will delete (at least) this element of `D`.
+      invalidateImplImpl(Element.AK, Element.ID);
+    }
+    // Remove any dependent tracking nodes that are tracking a dependency
+    // on this analysis result.
+    // This analysis result is about to be erased and those pointers can't
+    // be allowed to dangle.
+    for (auto DepNodeIt : I->DependentTrackingNodesThatPointAtMe)
+      DepNodeIt->OwnerList.erase(DepNodeIt);
+
     auto Ret = L.erase(I); // This returns the iterator to the next element.
     AnalysisResults.erase(MapKey); // RI may have been invalidated, so use the key.
     return Ret;
@@ -611,6 +623,14 @@ private:
     if (ResultsList.empty())
       AnalysisResultLists.erase(static_cast<TypeErasedIRUnitID>(&IR));
 
+    // TODO: once dependency management is in place, make each IRUnit
+    // depend on a dummy analysis on its "static parent" IRUnit (i.e. for a
+    // function, the module, for a loop, the parent function).
+    // Associating the function with an CGSCC will be more complicated. One
+    // reason is that during inlining we want to call function analyses on
+    // callers of the current function (BPI and BFI at least). But Tarjan's
+    // algorithm discovers SCC's in a bottom-up fashion, so we still
+    // haven't even created the SCC objects for the callers.
     std::vector<std::pair<AnalysisKey, TypeErasedIRUnitID>>
         AnalysisResultsKeysLocalCopy;
     for (auto &KV : AnalysisResults)
