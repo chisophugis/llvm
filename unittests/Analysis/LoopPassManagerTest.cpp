@@ -145,6 +145,13 @@ public:
 
 TEST_F(LoopPassManagerTest, Basic) {
   AnalysisManager AM(true);
+  AM.registerPass<Module>(
+      [&] { return ParentIRUnitTrackingAnalysis<Module>(); });
+  AM.registerPass<Function>(
+      [&] { return ParentIRUnitTrackingAnalysis<Function>(); });
+  AM.registerPass<Loop>(
+      [&] { return ParentIRUnitTrackingAnalysis<Loop>(); });
+
   int LoopAnalysisRuns = 0;
   AM.registerPass<Loop>([&] { return TestLoopAnalysis(LoopAnalysisRuns); });
 

@@ -247,6 +247,13 @@ TEST(CGSCCPassManagerTest, Basic) {
                    "  ret void\n"
                    "}\n");
   AnalysisManager AM(/*DebugLogging*/ true);
+  AM.registerPass<Module>(
+      [&] { return ParentIRUnitTrackingAnalysis<Module>(); });
+  AM.registerPass<LazyCallGraph::SCC>(
+      [&] { return ParentIRUnitTrackingAnalysis<LazyCallGraph::SCC>(); });
+  AM.registerPass<Function>(
+      [&] { return ParentIRUnitTrackingAnalysis<Function>(); });
+
   int FunctionAnalysisRuns = 0;
   AM.registerPass<Function>(
       [&] { return TestFunctionAnalysis(FunctionAnalysisRuns); });

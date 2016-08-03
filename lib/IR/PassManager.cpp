@@ -17,4 +17,7 @@ using namespace llvm;
 namespace llvm {
 template class PassManager<Module>;
 template class PassManager<Function>;
+
+template struct ParentIRUnitTrackingAnalysis<Module>;
+template struct ParentIRUnitTrackingAnalysis<Function>;
 }

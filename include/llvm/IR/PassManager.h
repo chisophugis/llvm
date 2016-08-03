@@ -178,6 +178,8 @@ struct AnalysisKey {
 
 static inline IRUnitKind getIRUnitKindID(Function *) { return IRK_Function; }
 static inline IRUnitKind getIRUnitKindID(Module *) { return IRK_Module; }
+static inline Module *getStaticParentIRUnit(Function &F) { return F.getParent(); }
+static inline Module *getStaticParentIRUnit(Module &M) { return nullptr; }
 
 // Provide DenseMapInfo for AnalysisKey
 template <> struct DenseMapInfo<AnalysisKey> {
@@ -231,6 +233,21 @@ struct AnalysisInfoMixin : PassInfoMixin<DerivedT> {
   /// static PassID as well.
   static void *ID() { return (void *)&DerivedT::PassID; }
 };
+
+class AnalysisManager;
+
+// This is used internally by the analysis manager to track dependencies on
+// parent IRUnit's.
+template <typename IRUnitT>
+struct ParentIRUnitTrackingAnalysis
+    : public AnalysisInfoMixin<ParentIRUnitTrackingAnalysis<IRUnitT>> {
+  typedef int Result; // Dummy.
+  Result run(IRUnitT &, AnalysisManager &) { return 0; }
+  static char PassID;
+};
+template <typename IRUnitT> char ParentIRUnitTrackingAnalysis<IRUnitT>::PassID;
+extern template struct ParentIRUnitTrackingAnalysis<Module>;
+extern template struct ParentIRUnitTrackingAnalysis<Function>;
 
 namespace detail {
 
@@ -518,6 +535,15 @@ private:
       ThisResult = std::prev(ResultList.end());
       RI->second = ThisResult;
       InFlightAnalysesStack.push_back(ThisResult);
+      // Set up the parent IR unit tracking analysis.
+      // The dependency link will invalidate this result when invalidating
+      // analysis result for the parent IRUnit.
+      if (auto *P = getStaticParentIRUnit(IR)) {
+        typedef
+            typename std::remove_reference<decltype(*P)>::type ParentIRUnitT;
+        this->getResult<ParentIRUnitTrackingAnalysis<ParentIRUnitT>>(*P);
+      }
+      // Run the analysis and get the result.
       E.Result = P.run(static_cast<TypeErasedIRUnitID>(&IR), *this);
       InFlightAnalysesStack.pop_back();
     }
@@ -634,42 +660,6 @@ private:
     if (ResultsList.empty())
       AnalysisResultLists.erase(static_cast<TypeErasedIRUnitID>(&IR));
 
-    // TODO: once dependency management is in place, make each IRUnit
-    // depend on a dummy analysis on its "static parent" IRUnit (i.e. for a
-    // function, the module, for a loop, the parent function).
-    // Associating the function with an CGSCC will be more complicated. One
-    // reason is that during inlining we want to call function analyses on
-    // callers of the current function (BPI and BFI at least). But Tarjan's
-    // algorithm discovers SCC's in a bottom-up fashion, so we still
-    // haven't even created the SCC objects for the callers.
-    std::vector<std::pair<AnalysisKey, TypeErasedIRUnitID>>
-        AnalysisResultsKeysLocalCopy;
-    for (auto &KV : AnalysisResults)
-      AnalysisResultsKeysLocalCopy.push_back(KV.first);
-    for (auto &P : AnalysisResultsKeysLocalCopy) {
-      AnalysisKey AK = P.first;
-      TypeErasedIRUnitID ID = P.second;
-      // If this is for a larger or equal IRUnitTKind
-      if (AK.IRUnitKindID >= getIRUnitKindID(&IR))
-        continue;
-      // The key may have been deleted from the map.
-      // Don't try to reinvalidate.
-      if (!AnalysisResults.count(P))
-        continue;
-
-      if (AK.IRUnitKindID == IRK_Function)
-        invalidateImpl(*(Function *)ID, PA);
-      if (AK.IRUnitKindID == IRK_Module)
-        invalidateImpl(*(Module *)ID, PA);
-      // FIXME: This would be a layering violation.
-      // These types live in libAnalysis.
-      // The solution would be to use an indirect interface that has to be
-      // registered with the analysis manager.
-      //if (AK.IRUnitKindID == IRK_Loop)
-      //  invalidateImpl(*(Loop *)TypeErasedIRUnitID, PA);
-      //if (AK.IRUnitKindID == IRK_CGSCC)
-      //  invalidateImpl(*(LazyCallGraph::SCC *)TypeErasedIRUnitID, PA);
-    }
     return PA;
   }
 
@@ -852,6 +842,7 @@ public:
       PA.intersect(std::move(PassPA));
     }
 
+    PA.preserve<ParentIRUnitTrackingAnalysis<Module>>();
     return PA;
   }
 

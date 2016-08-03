@@ -101,6 +101,10 @@ private:
 };
 
 static inline IRUnitKind getIRUnitKindID(Loop *) { return IRK_Loop; }
+static inline Function *getStaticParentIRUnit(Loop &L) {
+  return L.getHeader()->getParent();
+}
+extern template struct ParentIRUnitTrackingAnalysis<Loop>;
 
 // FIXME: Temporary typedef to avoid needing as much source churn.
 typedef AnalysisManager LoopAnalysisManager;

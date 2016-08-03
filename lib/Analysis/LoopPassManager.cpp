@@ -20,6 +20,7 @@ using namespace llvm;
 // Explicit instantiations for core typedef'ed templates.
 namespace llvm {
 template class PassManager<Loop>;
+template struct ParentIRUnitTrackingAnalysis<Loop>;
 }
 
 PreservedAnalyses llvm::getLoopPassPreservedAnalyses() {

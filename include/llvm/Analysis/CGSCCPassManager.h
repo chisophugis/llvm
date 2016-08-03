@@ -170,6 +170,11 @@ private:
 static inline IRUnitKind getIRUnitKindID(LazyCallGraph::SCC *) {
   return IRK_CGSCC;
 }
+static inline Module *getStaticParentIRUnit(LazyCallGraph::SCC &C) {
+  assert(C.size() != 0 && "Empty SCC?");
+  return C.begin()->getFunction().getParent();
+}
+extern template struct ParentIRUnitTrackingAnalysis<LazyCallGraph::SCC>;
 
 // FIXME: Temporary typedef to avoid needing as much source churn.
 typedef AnalysisManager CGSCCAnalysisManager;

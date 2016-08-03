@@ -99,7 +99,7 @@ struct TestMinPreservingModulePass
     // Force running an analysis.
     (void)AM.getResult<TestModuleAnalysis>(M);
 
-    PA.preserve<TestFunctionAnalysis>();
+    PA.preserve<ParentIRUnitTrackingAnalysis<Module>>();
     return PA;
   }
 };
@@ -214,6 +214,9 @@ TEST_F(PassManagerTest, BasicPreservedAnalyses) {
 
 TEST_F(PassManagerTest, Basic) {
   AnalysisManager AM(true);
+  AM.registerPass<Module>(
+      [&] { return ParentIRUnitTrackingAnalysis<Module>(); });
+
   int FunctionAnalysisRuns = 0;
   AM.registerPass<Function>(
       [&] { return TestFunctionAnalysis(FunctionAnalysisRuns); });

@@ -14,4 +14,5 @@ using namespace llvm;
 // Explicit instantiations for the pass manager.
 namespace llvm {
 template class PassManager<LazyCallGraph::SCC>;
+template struct ParentIRUnitTrackingAnalysis<LazyCallGraph::SCC>;
 }
