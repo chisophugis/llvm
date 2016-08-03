@@ -434,6 +434,7 @@ AlignmentFromAssumptionsPass::run(Function &F, AnalysisManager &AM) {
   ScalarEvolution &SE = AM.getResult<ScalarEvolutionAnalysis>(F);
   DominatorTree &DT = AM.getResult<DominatorTreeAnalysis>(F);
   bool Changed = runImpl(F, AC, &SE, &DT);
+  AM.invalidate<ScalarEvolutionAnalysis>(F);
   if (!Changed)
     return PreservedAnalyses::all();
   PreservedAnalyses PA;
