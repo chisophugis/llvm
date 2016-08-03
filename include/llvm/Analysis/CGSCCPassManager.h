@@ -170,6 +170,10 @@ private:
 static inline IRUnitKind getIRUnitKindID(LazyCallGraph::SCC *) {
   return IRK_CGSCC;
 }
+static inline Module *getStaticParentIRUnit(LazyCallGraph::SCC &C) {
+  assert(C.size() != 0 && "Empty SCC?");
+  return C.begin()->getFunction().getParent();
+}
 
 /// \brief A function to deduce a function pass type and wrap it in the
 /// templated adaptor.
