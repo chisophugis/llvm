@@ -538,7 +538,18 @@ private:
   ResultConceptT *getCachedResultImpl(AnalysisKey AK, IRUnitT &IR) const {
     typename AnalysisResultMapT::const_iterator RI = AnalysisResults.find(
         std::make_pair(AK, static_cast<TypeErasedIRUnitID>(&IR)));
-    return RI == AnalysisResults.end() ? nullptr : &*RI->second->Result;
+    bool Cached = RI != AnalysisResults.end();
+    if (!Cached)
+      return nullptr;
+    AnalysisResultListT::iterator ThisResult = RI->second;
+    // Add dependency tracking links.
+    if (!InFlightAnalysesStack.empty()) {
+      auto I = InFlightAnalysesStack.back();
+      ThisResult->Dependents.push_back({I, ThisResult->Dependents});
+      I->DependentTrackingNodesThatPointAtMe.push_back(
+          std::prev(ThisResult->Dependents.end()));
+    }
+    return ThisResult->Result.get();
   }
 
   /// \brief Invalidate a function pass result.
