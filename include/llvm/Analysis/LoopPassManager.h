@@ -101,6 +101,9 @@ private:
 };
 
 static inline IRUnitKind getIRUnitKindID(Loop *) { return IRK_Loop; }
+static inline Function *getStaticParentIRUnit(Loop &L) {
+  return L.getHeader()->getParent();
+}
 
 /// \brief A function to deduce a loop pass type and wrap it in the templated
 /// adaptor.

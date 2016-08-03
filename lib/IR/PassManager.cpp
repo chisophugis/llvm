@@ -17,4 +17,26 @@ using namespace llvm;
 namespace llvm {
 template class PassManager<Module>;
 template class PassManager<Function>;
+
+struct ParentIRUnitTrackingAnalysisResultModel
+    : public detail::AnalysisResultConcept {
+  bool invalidate(TypeErasedIRUnitID IR, const PreservedAnalyses &PA) override {
+    return !PA.preserved(ParentIRUnitTrackingAnalysis<Module>::ID());
+  }
+};
+
+struct ParentIRUnitTrackingAnalysisModel : public detail::AnalysisPassConcept {
+  std::unique_ptr<detail::AnalysisResultConcept> run(TypeErasedIRUnitID IR,
+                                                     AnalysisManager &AM) {
+    return make_unique<ParentIRUnitTrackingAnalysisResultModel>();
+  }
+  StringRef name() override { return "ParentIRUnitTrackingAnalysisModel"; }
+};
+
+detail::AnalysisPassConcept &
+getParentIRUnitTrackingAnalysisPassConcept() {
+  static ParentIRUnitTrackingAnalysisModel Instance;
+  return Instance;
+}
+
 }

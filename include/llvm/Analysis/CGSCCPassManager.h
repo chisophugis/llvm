@@ -204,6 +204,10 @@ private:
 };
 
 static inline IRUnitKind getIRUnitKindID(CallGraphSCC *) { return IRK_CGSCC; }
+static inline Module *getStaticParentIRUnit(CallGraphSCC &) {
+  // FIXME: Can't generally find the module.
+  return nullptr;
+}
 
 /// \brief A function to deduce a function pass type and wrap it in the
 /// templated adaptor.
